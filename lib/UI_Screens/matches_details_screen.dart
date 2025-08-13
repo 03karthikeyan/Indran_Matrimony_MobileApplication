@@ -1,9 +1,42 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'subscription_screen.dart';
 
-class MatchesDetailsScreen extends StatelessWidget {
-  const MatchesDetailsScreen({Key? key}) : super(key: key);
+class MatchesDetailsScreen extends StatefulWidget {
+  final Map<String, dynamic> match;
+
+  const MatchesDetailsScreen({Key? key, required this.match}) : super(key: key);
+
+  @override
+  State<MatchesDetailsScreen> createState() => _MatchesDetailsScreenState();
+}
+
+class _MatchesDetailsScreenState extends State<MatchesDetailsScreen> {
+  bool isPremiumUser = false; // Default to false
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserPremiumStatus();
+  }
+
+  // Example: Load from SharedPreferences or API
+  Future<void> _loadUserPremiumStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      isPremiumUser = prefs.getBool('isPremium') ?? false;
+    });
+  }
+
+  String formatContact(String contact, bool isPremium) {
+    if (contact.isEmpty) return "--";
+    if (isPremium) {
+      return "+91 $contact";
+    } else {
+      return "+91 ${contact.substring(0, 2)}**** *****";
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -11,41 +44,11 @@ class MatchesDetailsScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F7F7),
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(58),
-        child: Container(
-          decoration: BoxDecoration(
-            color: pink,
-            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
-          ),
-          child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              child: Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Colors.white),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                  const SizedBox(width: 7),
-                  const Expanded(
-                    child: Text(
-                      "All Matches 3/345",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 18,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.more_vert, color: Colors.white),
-                    onPressed: () {},
-                  ),
-                ],
-              ),
-            ),
-          ),
+      appBar: AppBar(
+        backgroundColor: pink,
+        title: Text(
+          "${widget.match['name']} (${widget.match['age']} yrs)",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
       ),
       body: ListView(
@@ -58,7 +61,13 @@ class MatchesDetailsScreen extends StatelessWidget {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(14),
-              boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 7, offset: Offset(0, 3))],
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 7,
+                  offset: Offset(0, 3),
+                ),
+              ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -73,7 +82,7 @@ class MatchesDetailsScreen extends StatelessWidget {
                     alignment: Alignment.topRight,
                     children: [
                       Image.asset(
-                        'assets/images/user1.jpg',
+                        'assets/2.png',
                         width: double.infinity,
                         height: 180,
                         fit: BoxFit.cover,
@@ -86,17 +95,27 @@ class MatchesDetailsScreen extends StatelessWidget {
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                  color: Colors.black12, blurRadius: 6, offset: Offset(0, 1))
+                                color: Colors.black12,
+                                blurRadius: 6,
+                                offset: Offset(0, 1),
+                              ),
                             ],
                           ),
-                          child: Icon(Icons.favorite_border, color: pink, size: 26),
+                          child: Icon(
+                            Icons.favorite_border,
+                            color: pink,
+                            size: 26,
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -104,44 +123,77 @@ class MatchesDetailsScreen extends StatelessWidget {
                       Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 9,
+                              vertical: 3,
+                            ),
                             decoration: BoxDecoration(
                               color: const Color(0xFFE7F7F0),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Row(
                               children: const [
-                                Icon(Icons.verified, color: Color(0xFF57BB7A), size: 15),
+                                Icon(
+                                  Icons.verified,
+                                  color: Color(0xFF57BB7A),
+                                  size: 15,
+                                ),
                                 SizedBox(width: 4),
-                                Text("ID Verified", style: TextStyle(fontSize: 12.5, color: Color(0xFF57BB7A), fontWeight: FontWeight.w600)),
+                                Text(
+                                  "ID Verified",
+                                  style: TextStyle(
+                                    fontSize: 12.5,
+                                    color: Color(0xFF57BB7A),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
                           Container(
                             margin: const EdgeInsets.only(left: 7),
-                            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 9,
+                              vertical: 3,
+                            ),
                             decoration: BoxDecoration(
                               color: const Color(0xFFEAF6FF),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Row(
                               children: const [
-                                Icon(Icons.workspace_premium, color: Color(0xFF1D7AF5), size: 15),
+                                Icon(
+                                  Icons.workspace_premium,
+                                  color: Color(0xFF1D7AF5),
+                                  size: 15,
+                                ),
                                 SizedBox(width: 4),
                                 Text(
                                   "Membership",
-                                  style: TextStyle(fontSize: 12, color: Color(0xFF1D7AF5), fontWeight: FontWeight.w600),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFF1D7AF5),
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ],
                             ),
                           ),
                           const Spacer(),
                           IconButton(
-                            icon: const Icon(Icons.call, color: Color(0xFFA51C48), size: 22),
+                            icon: const Icon(
+                              Icons.call,
+                              color: Color(0xFFA51C48),
+                              size: 22,
+                            ),
                             onPressed: () {},
                           ),
                           IconButton(
-                            icon: const FaIcon(FontAwesomeIcons.whatsapp, color: Colors.green, size: 22),
+                            icon: const FaIcon(
+                              FontAwesomeIcons.whatsapp,
+                              color: Colors.green,
+                              size: 22,
+                            ),
                             onPressed: () {},
                           ),
                         ],
@@ -152,7 +204,7 @@ class MatchesDetailsScreen extends StatelessWidget {
                         children: [
                           Expanded(
                             child: Text(
-                              "G. Priya",
+                              widget.match['name'] ?? "Unknown",
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 18,
@@ -160,14 +212,21 @@ class MatchesDetailsScreen extends StatelessWidget {
                             ),
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 9,
+                              vertical: 3,
+                            ),
                             decoration: BoxDecoration(
                               color: const Color(0xFFEBF7F0),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: const Text(
                               "95% Match",
-                              style: TextStyle(fontSize: 13, color: Color(0xFF16C93B), fontWeight: FontWeight.w600),
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Color(0xFF16C93B),
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                         ],
@@ -179,23 +238,49 @@ class MatchesDetailsScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 7),
                       Row(
-                        children: const [
+                        children: [
                           Text(
-                            "24 years • 5'2\" • Nadar • Chennai",
-                            style: TextStyle(fontSize: 14.5, color: Colors.black87, fontWeight: FontWeight.w500),
+                            "${widget.match['age'] ?? '--'} years • ${widget.match['caste'] ?? '--'} • ${widget.match['city'] ?? '--'}",
+                            style: TextStyle(
+                              fontSize: 14.5,
+                              color: Colors.black87,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 7),
                       Row(
-                        children: const [
-                          Icon(Icons.school, size: 15, color: Color(0xFFA51C48)),
+                        children: [
+                          Icon(
+                            Icons.school,
+                            size: 15,
+                            color: Color(0xFFA51C48),
+                          ),
                           SizedBox(width: 4),
-                          Text("B.Tech", style: TextStyle(fontSize: 13.5, color: Colors.black87)),
+                          Text(
+                            widget.match['higher_education'] ?? "Not specified",
+                            style: TextStyle(
+                              fontSize: 13.5,
+                              color: Colors.black87,
+                            ),
+                          ),
                           SizedBox(width: 13),
                           Icon(Icons.work, size: 15, color: Color(0xFFA51C48)),
                           SizedBox(width: 4),
-                          Text("Software Engineer", style: TextStyle(fontSize: 13.5, color: Colors.black87)),
+                          Text(
+                            widget.match['occupation']
+                                        ?.toString()
+                                        .trim()
+                                        .isNotEmpty ==
+                                    true
+                                ? widget.match['occupation']
+                                : "Not specified",
+                            style: TextStyle(
+                              fontSize: 13.5,
+                              color: Colors.black87,
+                            ),
+                          ),
                         ],
                       ),
                     ],
@@ -206,8 +291,12 @@ class MatchesDetailsScreen extends StatelessWidget {
           ),
           // About Section
           _SectionCard(
-            title: "About Priya",
-            body: "I am a software engineer working at a leading tech company in Chennai. I come from a traditional Tamil family with modern values. I enjoy reading, travelling, and cooking in my free time. Looking for a partner who respects tradition while embracing modern outlook.",
+            title: "About ${widget.match['name'] ?? 'User'}",
+            body:
+                widget.match['about_yourself']?.toString().trim().isNotEmpty ==
+                        true
+                    ? widget.match['about_yourself']
+                    : "No description provided.",
           ),
           // Basic Details
           _SectionCard(
@@ -217,15 +306,57 @@ class MatchesDetailsScreen extends StatelessWidget {
                 0: FlexColumnWidth(1.7),
                 1: FlexColumnWidth(2.3),
               },
-              children: const [
-                TableRow(children: [Text("Age"), Text("24 Years and 4 months")]),
-                TableRow(children: [Text("Physique"), Text("64 Kg | 5'2\"")]),
-                TableRow(children: [Text("Language"), Text("Tamil, English, Hindi")]),
-                TableRow(children: [Text("Marital Status"), Text("Never Married")]),
-                TableRow(children: [Text("Lives in"), Text("Chennai")]),
-                TableRow(children: [Text("Citizenship"), Text("Indian")]),
-                TableRow(children: [Text("Smoking Habits"), Text("No")]),
-                TableRow(children: [Text("Drinking Habits"), Text("No")]),
+              children: [
+                TableRow(
+                  children: [
+                    const Text("Age"),
+                    Text("${widget.match['age'] ?? '--'} Years"),
+                  ],
+                ),
+                TableRow(
+                  children: [
+                    const Text("Physique"),
+                    Text(
+                      "${widget.match['weight'] ?? '--'} Kg | ${widget.match['height'] ?? '--'}",
+                    ),
+                  ],
+                ),
+                TableRow(
+                  children: [
+                    const Text("Language"),
+                    Text(widget.match['languages'] ?? '--'),
+                  ],
+                ),
+                TableRow(
+                  children: [
+                    const Text("Marital Status"),
+                    Text(widget.match['marital_status'] ?? '--'),
+                  ],
+                ),
+                TableRow(
+                  children: [
+                    const Text("Lives in"),
+                    Text(widget.match['city'] ?? '--'),
+                  ],
+                ),
+                TableRow(
+                  children: [
+                    const Text("Citizenship"),
+                    Text(widget.match['citizenship'] ?? '--'),
+                  ],
+                ),
+                TableRow(
+                  children: [
+                    const Text("Smoking Habits"),
+                    Text(widget.match['smoking'] ?? '--'),
+                  ],
+                ),
+                TableRow(
+                  children: [
+                    const Text("Drinking Habits"),
+                    Text(widget.match['drinking'] ?? '--'),
+                  ],
+                ),
               ],
             ),
           ),
@@ -245,20 +376,42 @@ class MatchesDetailsScreen extends StatelessWidget {
                     children: [
                       Icon(Icons.lock, size: 19, color: Colors.grey[700]),
                       const SizedBox(width: 6),
-                      const Text("Contact Details ", style: TextStyle(fontWeight: FontWeight.w600)),
-                      const Text("+91 95**** *****", style: TextStyle(fontWeight: FontWeight.w600)),
+                      const Text(
+                        "Contact Details ",
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      Text(
+                        formatContact(
+                          widget.match['contact_no'] ?? '',
+                          isPremiumUser, // boolean value you get from login/user data
+                        ),
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
                       const Spacer(),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 7,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0xFFEBF7F0),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Row(
                           children: const [
-                            Icon(Icons.verified, color: Color(0xFF16C93B), size: 13),
+                            Icon(
+                              Icons.verified,
+                              color: Color(0xFF16C93B),
+                              size: 13,
+                            ),
                             SizedBox(width: 3),
-                            Text("Mobile No. Verified", style: TextStyle(fontSize: 12, color: Color(0xFF16C93B))),
+                            Text(
+                              "Mobile No. Verified",
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFF16C93B),
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -271,23 +424,37 @@ class MatchesDetailsScreen extends StatelessWidget {
                       ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.green,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                           elevation: 0,
                         ),
                         onPressed: () {},
-                        icon: const FaIcon(FontAwesomeIcons.whatsapp, color: Colors.white, size: 18),
-                        label: const Text("Whatsapp", style: TextStyle(color: Colors.white)),
+                        icon: const FaIcon(
+                          FontAwesomeIcons.whatsapp,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                        label: const Text(
+                          "Whatsapp",
+                          style: TextStyle(color: Colors.white),
+                        ),
                       ),
                       const SizedBox(width: 10),
                       ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: pink,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                           elevation: 0,
                         ),
                         onPressed: () {},
                         icon: const Icon(Icons.call, color: Colors.white),
-                        label: const Text("Call Now", style: TextStyle(color: Colors.white)),
+                        label: const Text(
+                          "Call Now",
+                          style: TextStyle(color: Colors.white),
+                        ),
                       ),
                     ],
                   ),
@@ -295,14 +462,27 @@ class MatchesDetailsScreen extends StatelessWidget {
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: pink,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
                     onPressed: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const SubscriptionScreen()));
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const SubscriptionScreen(),
+                        ),
+                      );
                     },
-                    child: const Text("Upgrade to view contact number", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                    child: const Text(
+                      "Upgrade to view contact number",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -317,11 +497,30 @@ class MatchesDetailsScreen extends StatelessWidget {
                 1: FlexColumnWidth(2.3),
               },
               children: const [
-                TableRow(children: [Text("Father"), Text("Ramesh Kumar, Retired Government Officer")]),
-                TableRow(children: [Text("Mother"), Text("Lakshmi, Homemaker")]),
-                TableRow(children: [Text("Siblings"), Text("1 Brother (Married), 1 Sister (Studying)")]),
-                TableRow(children: [Text("Family Type"), Text("Nuclear Family")]),
-                TableRow(children: [Text("Family Values"), Text("Traditional with Modern")]),
+                TableRow(
+                  children: [
+                    Text("Father"),
+                    Text("Ramesh Kumar, Retired Government Officer"),
+                  ],
+                ),
+                TableRow(
+                  children: [Text("Mother"), Text("Lakshmi, Homemaker")],
+                ),
+                TableRow(
+                  children: [
+                    Text("Siblings"),
+                    Text("1 Brother (Married), 1 Sister (Studying)"),
+                  ],
+                ),
+                TableRow(
+                  children: [Text("Family Type"), Text("Nuclear Family")],
+                ),
+                TableRow(
+                  children: [
+                    Text("Family Values"),
+                    Text("Traditional with Modern"),
+                  ],
+                ),
               ],
             ),
           ),
@@ -334,10 +533,24 @@ class MatchesDetailsScreen extends StatelessWidget {
                 1: FlexColumnWidth(2.3),
               },
               children: const [
-                TableRow(children: [Text("Education"), Text("B.Tech in Computer Science")]),
-                TableRow(children: [Text("College"), Text("Anna University, Chennai")]),
-                TableRow(children: [Text("Profession"), Text("Software Engineer")]),
-                TableRow(children: [Text("Company"), Text("TechSolutions India Pvt Ltd")]),
+                TableRow(
+                  children: [
+                    Text("Education"),
+                    Text("B.Tech in Computer Science"),
+                  ],
+                ),
+                TableRow(
+                  children: [Text("College"), Text("Anna University, Chennai")],
+                ),
+                TableRow(
+                  children: [Text("Profession"), Text("Software Engineer")],
+                ),
+                TableRow(
+                  children: [
+                    Text("Company"),
+                    Text("TechSolutions India Pvt Ltd"),
+                  ],
+                ),
                 TableRow(children: [Text("Income"), Text("₹15–18 LPA")]),
               ],
             ),
@@ -390,14 +603,27 @@ class MatchesDetailsScreen extends StatelessWidget {
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: pink,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
                     onPressed: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const SubscriptionScreen()));
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const SubscriptionScreen(),
+                        ),
+                      );
                     },
-                    child: const Text("Upgrade to view horoscope", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                    child: const Text(
+                      "Upgrade to view horoscope",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -414,10 +640,32 @@ class MatchesDetailsScreen extends StatelessWidget {
               children: const [
                 TableRow(children: [Text("Age"), Text("28–32 years")]),
                 TableRow(children: [Text("Height"), Text("5'8\"–6'0\"")]),
-                TableRow(children: [Text("Education"), Text("Any Professional Degree")]),
-                TableRow(children: [Text("Profession"), Text("IT, Engineering, Medical,")]),
-                TableRow(children: [Text("Location"), Text("Chennai, Bangalore, Open to relocate")]),
-                TableRow(children: [Text("Expectations"), Text("Well-educated, family-oriented, respectful, ambitious")]),
+                TableRow(
+                  children: [
+                    Text("Education"),
+                    Text("Any Professional Degree"),
+                  ],
+                ),
+                TableRow(
+                  children: [
+                    Text("Profession"),
+                    Text("IT, Engineering, Medical,"),
+                  ],
+                ),
+                TableRow(
+                  children: [
+                    Text("Location"),
+                    Text("Chennai, Bangalore, Open to relocate"),
+                  ],
+                ),
+                TableRow(
+                  children: [
+                    Text("Expectations"),
+                    Text(
+                      "Well-educated, family-oriented, respectful, ambitious",
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
@@ -426,9 +674,19 @@ class MatchesDetailsScreen extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             child: Row(
               children: [
-                const Text("Profiles you may like", style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                const Text(
+                  "Profiles you may like",
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                ),
                 const Spacer(),
-                Text("View All", style: TextStyle(color: pink, fontWeight: FontWeight.w500, fontSize: 14)),
+                Text(
+                  "View All",
+                  style: TextStyle(
+                    color: pink,
+                    fontWeight: FontWeight.w500,
+                    fontSize: 14,
+                  ),
+                ),
               ],
             ),
           ),
@@ -438,9 +696,21 @@ class MatchesDetailsScreen extends StatelessWidget {
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.only(left: 12),
               children: [
-                _ProfileSuggestionCard(name: "Sri", age: 26, image: 'assets/images/user2.jpg'),
-                _ProfileSuggestionCard(name: "Ramya Varanasi", age: 24, image: 'assets/images/user1.jpg'),
-                _ProfileSuggestionCard(name: "Shalini M", age: 24, image: 'assets/images/user2.jpg'),
+                _ProfileSuggestionCard(
+                  name: "Sri",
+                  age: 26,
+                  image: 'assets/images/user2.jpg',
+                ),
+                _ProfileSuggestionCard(
+                  name: "Ramya Varanasi",
+                  age: 24,
+                  image: 'assets/images/user1.jpg',
+                ),
+                _ProfileSuggestionCard(
+                  name: "Shalini M",
+                  age: 24,
+                  image: 'assets/images/user2.jpg',
+                ),
               ],
             ),
           ),
@@ -468,7 +738,10 @@ class _SectionCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+            Text(
+              title,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+            ),
             const SizedBox(height: 6),
             if (body != null)
               Text(
@@ -487,7 +760,11 @@ class _ProfileSuggestionCard extends StatelessWidget {
   final String name;
   final int age;
   final String image;
-  const _ProfileSuggestionCard({required this.name, required this.age, required this.image});
+  const _ProfileSuggestionCard({
+    required this.name,
+    required this.age,
+    required this.image,
+  });
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -505,14 +782,27 @@ class _ProfileSuggestionCard extends StatelessWidget {
             height: 58,
             width: double.infinity,
             decoration: BoxDecoration(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(11)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(11),
+              ),
               color: Colors.grey[300],
-              image: DecorationImage(image: AssetImage(image), fit: BoxFit.cover),
+              image: DecorationImage(
+                image: AssetImage(image),
+                fit: BoxFit.cover,
+              ),
             ),
           ),
           const SizedBox(height: 7),
-          Text(name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-          Text('$age yrs', style: const TextStyle(fontSize: 13, color: Colors.black54)),
+          Text(
+            name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+          ),
+          Text(
+            '$age yrs',
+            style: const TextStyle(fontSize: 13, color: Colors.black54),
+          ),
         ],
       ),
     );

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:matrimony/UI_Screens/filter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'matches_details_screen.dart';
 import '../services/api_service.dart';
@@ -15,6 +16,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
   bool isLoading = true;
   int totalMatches = 0;
   int? userId;
+  Map<String, dynamic> currentFilters = {};
 
   @override
   void initState() {
@@ -33,7 +35,22 @@ class _MatchesScreenState extends State<MatchesScreen> {
   }
 
   Future<void> _loadMatches() async {
-    final result = await ApiService.getMatchingProfiles(userId!);
+    setState(() => isLoading = true);
+
+    final result =
+        currentFilters.isEmpty
+            ? await ApiService.getMatchingProfiles(userId!)
+            : await ApiService.getFilteredMatches(
+              userId!,
+              fromAge: currentFilters['from_age'],
+              toAge: currentFilters['to_age'],
+              higherEducation: currentFilters['higher_education'],
+              employeeIn: currentFilters['employee_in'],
+              city: currentFilters['city'],
+              fromIncome: currentFilters['from_income'],
+              toIncome: currentFilters['to_income'],
+            );
+
     print('Full API Result: $result');
 
     if (result['success'] && mounted) {
@@ -156,7 +173,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  onPressed: () {},
+                  onPressed: _openFilterScreen,
                 ),
               ],
             ),
@@ -192,7 +209,8 @@ class _MatchesScreenState extends State<MatchesScreen> {
                             onTap: () {
                               Navigator.of(context).push(
                                 MaterialPageRoute(
-                                  builder: (_) => const MatchesDetailsScreen(),
+                                  builder:
+                                      (_) => MatchesDetailsScreen(match: match),
                                 ),
                               );
                             },
@@ -204,6 +222,22 @@ class _MatchesScreenState extends State<MatchesScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _openFilterScreen() async {
+    final result = await Navigator.push<Map<String, dynamic>>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => FilterScreen(currentFilters: currentFilters),
+      ),
+    );
+
+    if (result != null) {
+      setState(() {
+        currentFilters = result;
+      });
+      await _loadMatches();
+    }
   }
 }
 

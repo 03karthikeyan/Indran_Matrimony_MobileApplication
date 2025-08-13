@@ -164,17 +164,57 @@ class ApiService {
 
   //Profile matches
 
-  static Future<Map<String, dynamic>> getMatchingProfiles(int userId) async {
+  static Future<Map<String, dynamic>> getMatchingProfiles(
+    int userId, {
+    Map<String, String>? filters,
+  }) async {
     try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/matching_profile.php?user_id=$userId'),
-      );
+      String url = '$baseUrl/matching_profile.php?user_id=$userId';
+
+      if (filters != null) {
+        filters.forEach((key, value) {
+          if (value.isNotEmpty) {
+            url += '&$key=$value';
+          }
+        });
+      }
+
+      final response = await http.get(Uri.parse(url));
 
       if (response.statusCode == 200) {
         return {'success': true, 'data': json.decode(response.body)};
       } else {
         return {'success': false, 'error': 'Failed to load matches'};
       }
+    } catch (e) {
+      return {'success': false, 'error': 'Network error: $e'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> getFilteredMatches(
+    int userId, {
+    int? fromAge,
+    int? toAge,
+    String? higherEducation,
+    String? employeeIn,
+    String? city,
+    int? fromIncome,
+    int? toIncome,
+  }) async {
+    try {
+      Map<String, String> filters = {};
+
+      if (fromAge != null) filters['from_age'] = fromAge.toString();
+      if (toAge != null) filters['to_age'] = toAge.toString();
+      if (higherEducation != null && higherEducation.isNotEmpty)
+        filters['higher_education'] = higherEducation;
+      if (employeeIn != null && employeeIn.isNotEmpty)
+        filters['employee_in'] = employeeIn;
+      if (city != null && city.isNotEmpty) filters['city'] = city;
+      if (fromIncome != null) filters['from_income'] = fromIncome.toString();
+      if (toIncome != null) filters['to_income'] = toIncome.toString();
+
+      return await getMatchingProfiles(userId, filters: filters);
     } catch (e) {
       return {'success': false, 'error': 'Network error: $e'};
     }
