@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:matrimony/UI_Screens/Message_Screen.dart';
+import 'package:matrimony/UI_Screens/chat_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'subscription_screen.dart';
 
@@ -46,6 +48,13 @@ class _MatchesDetailsScreenState extends State<MatchesDetailsScreen> {
       backgroundColor: const Color(0xFFF7F7F7),
       appBar: AppBar(
         backgroundColor: pink,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
+        iconTheme: const IconThemeData(
+          color: Colors.white, // Set your desired color here
+        ),
         title: Text(
           "${widget.match['name']} (${widget.match['age']} yrs)",
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
@@ -375,7 +384,7 @@ class _MatchesDetailsScreenState extends State<MatchesDetailsScreen> {
                   Row(
                     children: [
                       Icon(Icons.lock, size: 19, color: Colors.grey[700]),
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 4),
                       const Text(
                         "Contact Details ",
                         style: TextStyle(fontWeight: FontWeight.w600),
@@ -404,7 +413,7 @@ class _MatchesDetailsScreenState extends State<MatchesDetailsScreen> {
                               color: Color(0xFF16C93B),
                               size: 13,
                             ),
-                            SizedBox(width: 3),
+                            SizedBox(width: 1),
                             Text(
                               "Mobile No. Verified",
                               style: TextStyle(
@@ -443,16 +452,45 @@ class _MatchesDetailsScreenState extends State<MatchesDetailsScreen> {
                       const SizedBox(width: 10),
                       ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: pink,
+                          backgroundColor: Colors.pink,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
                           elevation: 0,
                         ),
-                        onPressed: () {},
-                        icon: const Icon(Icons.call, color: Colors.white),
+                        onPressed: () async {
+                          final prefs = await SharedPreferences.getInstance();
+                          String? senderId = prefs.getString('user_id');
+
+                          if (senderId == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text("User not logged in"),
+                              ),
+                            );
+                            return;
+                          }
+
+                          String receiverId =
+                              widget.match['user_id'].toString();
+
+                          // Navigate to chat screen
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder:
+                                  (_) => MessageScreen(
+                                    senderId: senderId,
+                                    receiverId: receiverId,
+                                    receiverName:
+                                        widget.match['name'] ?? "User",
+                                  ),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.chat, color: Colors.white),
                         label: const Text(
-                          "Call Now",
+                          "Chat",
                           style: TextStyle(color: Colors.white),
                         ),
                       ),
@@ -481,6 +519,7 @@ class _MatchesDetailsScreenState extends State<MatchesDetailsScreen> {
                       style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w600,
+                        fontSize: 12,
                       ),
                     ),
                   ),
@@ -532,26 +571,34 @@ class _MatchesDetailsScreenState extends State<MatchesDetailsScreen> {
                 0: FlexColumnWidth(1.7),
                 1: FlexColumnWidth(2.3),
               },
-              children: const [
+              children: [
                 TableRow(
                   children: [
                     Text("Education"),
-                    Text("B.Tech in Computer Science"),
+                    Text("${widget.match['higher_education'] ?? '--'}"),
                   ],
                 ),
                 TableRow(
                   children: [Text("College"), Text("Anna University, Chennai")],
                 ),
                 TableRow(
-                  children: [Text("Profession"), Text("Software Engineer")],
+                  children: [
+                    Text("Profession"),
+                    Text("${widget.match['occupation'] ?? '--'}"),
+                  ],
                 ),
                 TableRow(
                   children: [
                     Text("Company"),
-                    Text("TechSolutions India Pvt Ltd"),
+                    Text("${widget.match['employee_in'] ?? '--'}"),
                   ],
                 ),
-                TableRow(children: [Text("Income"), Text("₹15–18 LPA")]),
+                TableRow(
+                  children: [
+                    Text("Income"),
+                    Text("${widget.match['annual_income'] ?? '--'}"),
+                  ],
+                ),
               ],
             ),
           ),
@@ -563,11 +610,31 @@ class _MatchesDetailsScreenState extends State<MatchesDetailsScreen> {
                 0: FlexColumnWidth(1.7),
                 1: FlexColumnWidth(2.3),
               },
-              children: const [
-                TableRow(children: [Text("Religion"), Text("Hindu")]),
-                TableRow(children: [Text("Caste"), Text("Mudaliar")]),
-                TableRow(children: [Text("Sub-caste"), Text("Sengunthar")]),
-                TableRow(children: [Text("Gothram"), Text("Kashyapa")]),
+              children: [
+                TableRow(
+                  children: [
+                    Text("Religion"),
+                    Text("${widget.match['religion'] ?? '--'}"),
+                  ],
+                ),
+                TableRow(
+                  children: [
+                    Text("Caste"),
+                    Text("${widget.match['caste'] ?? '--'}"),
+                  ],
+                ),
+                TableRow(
+                  children: [
+                    Text("Sub-caste"),
+                    Text("${widget.match['sub_caste'] ?? '--'}"),
+                  ],
+                ),
+                TableRow(
+                  children: [
+                    Text("Gothram"),
+                    Text("${widget.match['Gothram'] ?? '--'}"),
+                  ],
+                ),
               ],
             ),
           ),

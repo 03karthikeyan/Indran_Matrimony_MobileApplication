@@ -219,4 +219,53 @@ class ApiService {
       return {'success': false, 'error': 'Network error: $e'};
     }
   }
+
+  //Message Get API
+
+  static Future<Map<String, dynamic>> getMessages({
+    required String senderId,
+    required String receiverId,
+  }) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/get_messages.php?sender_id=$senderId&receiver_id=$receiverId'),
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        return {'success': false, 'message': 'Failed to load messages'};
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Network error: $e'};
+    }
+  }
+
+  //Send Message API
+
+  static Future<Map<String, dynamic>> sendMessage({
+    required String senderId,
+    required String receiverId,
+    required String message,
+  }) async {
+    try {
+      final uri = Uri.parse(
+        "$baseUrl/send_message.php?sender_id=$senderId&receiver_id=$receiverId&message=${Uri.encodeComponent(message)}",
+      );
+
+      final response = await http.get(uri);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return {
+          'success': data['success'] ?? false,
+          'message': data['message'] ?? 'Unknown response',
+        };
+      } else {
+        return {'success': false, 'message': 'Server error'};
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Network error: $e'};
+    }
+  }
 }

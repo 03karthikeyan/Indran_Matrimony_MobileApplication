@@ -11,6 +11,7 @@ class PaymentScreen extends StatefulWidget {
 class _PaymentScreenState extends State<PaymentScreen> {
   int selectedPayment = 0; // 0: UPI, 1: NetBanking, 2: Card
   final pink = const Color(0xFFA51C48);
+  
 
   @override
   Widget build(BuildContext context) {
@@ -161,33 +162,53 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 borderRadius: BorderRadius.circular(18),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 17, vertical: 18),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Billing Summary",
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                  const SizedBox(height: 13),
-                  _billRow("Premium Plan (1 months)", "₹999"),
-                  _billRow(
-                    "Discount (10% off)",
-                    "-₹99.90",
-                    color: const Color(0xFF39B36B),
-                  ),
-                  _billRow("GST (18%)", "₹179.82"),
-                  const SizedBox(height: 6),
-                  const Divider(),
-                  _billRow(
-                    "Total Amount",
-                    "₹1,080",
-                    bold: true,
-                    color: const Color(0xFFA51C48),
-                  ),
-                ],
+              child: Builder(
+                builder: (context) {
+                  double price =
+                      double.tryParse(
+                        widget.plan?['plan_amount'].toString() ?? '0',
+                      ) ??
+                      0;
+                  double discount = price * 0.10; // 10%
+                  double gst = (price - discount) * 0.18; // 18%
+                  double total = price - discount + gst;
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "Billing Summary",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 13),
+                      _billRow(
+                        "${widget.plan?['name'] ?? 'Premium Plan'} (${widget.plan?['duration'] ?? '1 month'})",
+                        "₹${price.toStringAsFixed(2)}",
+                      ),
+                      _billRow(
+                        "Discount (10% off)",
+                        "-₹${discount.toStringAsFixed(2)}",
+                        color: const Color(0xFF39B36B),
+                      ),
+                      _billRow("GST (18%)", "₹${gst.toStringAsFixed(2)}"),
+                      const SizedBox(height: 6),
+                      const Divider(),
+                      _billRow(
+                        "Total Amount",
+                        "₹${total.toStringAsFixed(2)}",
+                        bold: true,
+                        color: const Color(0xFFA51C48),
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
           ),
+
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
             child: Row(
@@ -252,7 +273,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 ),
                 onPressed: () {},
                 child: const Text(
-                  "Pay Now ₹1,080",
+                  "Pay Now ",
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
