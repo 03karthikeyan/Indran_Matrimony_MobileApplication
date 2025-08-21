@@ -13,7 +13,15 @@ class BasicDetailsScreen extends StatefulWidget {
 class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
   String? gender;
   String? profileFor;
-  final profileOptions = ['Self', 'Son', 'Daughter', 'Brother', 'Sister', 'Friend', 'Relative'];
+  final profileOptions = [
+    'Self',
+    'Son',
+    'Daughter',
+    'Brother',
+    'Sister',
+    'Friend',
+    'Relative',
+  ];
   final TextEditingController nameController = TextEditingController();
   final TextEditingController dobController = TextEditingController();
   final TextEditingController ageController = TextEditingController();
@@ -62,27 +70,37 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
                           backgroundColor: Color(0xFFE0E0E0),
                         ),
                       ),
-                      Text("1 of 4",
-                          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+                      Text(
+                        "1 of 4",
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                        ),
+                      ),
                     ],
                   ),
                   SizedBox(width: 14),
-                  Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text("Basic Details",
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Basic Details",
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 19,
-                        )),
-                    SizedBox(height: 2),
-                    Text(
-                      "Next Step: Religion Details",
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: pinkColor,
-                        fontWeight: FontWeight.w500,
+                        ),
                       ),
-                    ),
-                  ]),
+                      SizedBox(height: 2),
+                      Text(
+                        "Next Step: Religion Details",
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: pinkColor,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -97,14 +115,20 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
             ),
             SizedBox(height: 20),
             // Name
-            Text("Name:", style: TextStyle(fontSize: 14, color: Colors.black87)),
+            Text(
+              "Name:",
+              style: TextStyle(fontSize: 14, color: Colors.black87),
+            ),
             SizedBox(height: 4),
             TextField(
               controller: nameController,
               decoration: InputDecoration(
                 filled: true,
                 fillColor: Colors.white,
-                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 14,
+                ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(9),
                   borderSide: BorderSide(color: Colors.grey.shade400),
@@ -124,17 +148,26 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text("Date Of Birth:", style: TextStyle(fontSize: 14, color: Colors.black87)),
+                      Text(
+                        "Date Of Birth:",
+                        style: TextStyle(fontSize: 14, color: Colors.black87),
+                      ),
                       SizedBox(height: 4),
                       TextField(
                         controller: dobController,
                         readOnly: true,
                         decoration: InputDecoration(
                           hintText: "",
-                          prefixIcon: Icon(Icons.calendar_today_outlined, size: 20),
+                          prefixIcon: Icon(
+                            Icons.calendar_today_outlined,
+                            size: 20,
+                          ),
                           filled: true,
                           fillColor: Colors.white,
-                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 14,
+                          ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(9),
                             borderSide: BorderSide(color: Colors.grey.shade400),
@@ -152,7 +185,8 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
                             lastDate: DateTime.now(),
                           );
                           if (picked != null) {
-                            dobController.text = "${picked.day}/${picked.month}/${picked.year}";
+                            dobController.text =
+                                "${picked.day}/${picked.month}/${picked.year}";
                           }
                         },
                       ),
@@ -164,7 +198,10 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text("Age:", style: TextStyle(fontSize: 14, color: Colors.black87)),
+                      Text(
+                        "Age:",
+                        style: TextStyle(fontSize: 14, color: Colors.black87),
+                      ),
                       SizedBox(height: 4),
                       TextField(
                         controller: ageController,
@@ -173,7 +210,10 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
                           suffixIcon: Icon(Icons.arrow_drop_down, size: 20),
                           filled: true,
                           fillColor: Colors.white,
-                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 14,
+                          ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(9),
                             borderSide: BorderSide(color: Colors.grey.shade400),
@@ -192,7 +232,10 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
             SizedBox(height: 16),
 
             // Email ID
-            Text("Email ID:", style: TextStyle(fontSize: 14, color: Colors.black87)),
+            Text(
+              "Email ID:",
+              style: TextStyle(fontSize: 14, color: Colors.black87),
+            ),
             SizedBox(height: 4),
             TextField(
               controller: emailController,
@@ -200,7 +243,10 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
               decoration: InputDecoration(
                 filled: true,
                 fillColor: Colors.white,
-                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 14,
+                ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(9),
                   borderSide: BorderSide(color: Colors.grey.shade400),
@@ -214,7 +260,10 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
             SizedBox(height: 16),
 
             // Gender
-            Text("Gender:", style: TextStyle(fontSize: 14, color: Colors.black87)),
+            Text(
+              "Gender:",
+              style: TextStyle(fontSize: 14, color: Colors.black87),
+            ),
             SizedBox(height: 4),
             Row(
               children: [
@@ -222,9 +271,12 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
                   child: OutlinedButton(
                     onPressed: () => setState(() => gender = 'Male'),
                     style: OutlinedButton.styleFrom(
-                      backgroundColor: gender == 'Male' ? pinkColor : Colors.white,
+                      backgroundColor:
+                          gender == 'Male' ? pinkColor : Colors.white,
                       side: BorderSide(color: Colors.grey.shade300),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                     child: Text(
                       "Male",
@@ -241,14 +293,18 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
                   child: OutlinedButton(
                     onPressed: () => setState(() => gender = 'Female'),
                     style: OutlinedButton.styleFrom(
-                      backgroundColor: gender == 'Female' ? pinkColor : Colors.white,
+                      backgroundColor:
+                          gender == 'Female' ? pinkColor : Colors.white,
                       side: BorderSide(color: Colors.grey.shade300),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                     child: Text(
                       "Female",
                       style: TextStyle(
-                        color: gender == 'Female' ? Colors.white : Colors.black87,
+                        color:
+                            gender == 'Female' ? Colors.white : Colors.black87,
                         fontWeight: FontWeight.w500,
                         fontSize: 15,
                       ),
@@ -260,14 +316,20 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
             SizedBox(height: 16),
 
             // Profile for
-            Text("Profile for:", style: TextStyle(fontSize: 14, color: Colors.black87)),
+            Text(
+              "Profile for:",
+              style: TextStyle(fontSize: 14, color: Colors.black87),
+            ),
             SizedBox(height: 4),
             DropdownButtonFormField<String>(
               value: profileFor,
               decoration: InputDecoration(
                 filled: true,
                 fillColor: Colors.white,
-                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 14,
+                ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(9),
                   borderSide: BorderSide(color: Colors.grey.shade400),
@@ -278,12 +340,10 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
                 ),
               ),
               hint: Text("Select"),
-              items: profileOptions
-                  .map((e) => DropdownMenuItem(
-                        child: Text(e),
-                        value: e,
-                      ))
-                  .toList(),
+              items:
+                  profileOptions
+                      .map((e) => DropdownMenuItem(child: Text(e), value: e))
+                      .toList(),
               onChanged: (v) {
                 setState(() => profileFor = v);
               },
@@ -311,16 +371,25 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
                     userData.age = ageController.text;
                     userData.emailId = emailController.text;
                     userData.gender = gender;
-                    
+
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => ReligionDetailsScreen(userData: userData),
+                        builder:
+                            (context) =>
+                                ReligionDetailsScreen(userData: userData),
                       ),
                     );
                   }
                 },
-                child: Text("Continue", style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.w600)),
+                child: Text(
+                  "Continue",
+                  style: TextStyle(
+                    fontSize: 18,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
             ),
             SizedBox(height: 30),
@@ -331,8 +400,11 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
   }
 
   bool _validateForm() {
-    if (nameController.text.isEmpty || dobController.text.isEmpty || 
-        ageController.text.isEmpty || emailController.text.isEmpty || gender == null) {
+    if (nameController.text.isEmpty ||
+        dobController.text.isEmpty ||
+        ageController.text.isEmpty ||
+        emailController.text.isEmpty ||
+        gender == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Please fill all required fields')),
       );

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:matrimony/UI_Screens/basic_details_screen.dart';
@@ -96,18 +97,19 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                         ),
+
                         Expanded(
                           child: Container(
                             decoration: BoxDecoration(
                               color: Colors.white,
-                              borderRadius: BorderRadius.horizontal(
+                              borderRadius: const BorderRadius.horizontal(
                                 right: Radius.circular(7),
                               ),
                               border: Border.all(color: Colors.grey.shade400),
                             ),
                             child: TextField(
                               controller: _mobileController,
-                              decoration: InputDecoration(
+                              decoration: const InputDecoration(
                                 hintText: "Enter mobile number",
                                 border: InputBorder.none,
                                 contentPadding: EdgeInsets.symmetric(
@@ -115,7 +117,12 @@ class _LoginScreenState extends State<LoginScreen> {
                                   vertical: 12,
                                 ),
                               ),
-                              keyboardType: TextInputType.phone,
+                              keyboardType:
+                                  TextInputType.number, // Only number keypad
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly,
+                                LengthLimitingTextInputFormatter(10),
+                              ],
                             ),
                           ),
                         ),
@@ -183,17 +190,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
-                        onPressed: () {
-                          // Navigator.push(
-                          //   context,
-                          //   MaterialPageRoute(
-                          //     builder:
-                          //         (context) => BasicDetailsScreen(
-                          //           mobile: _mobileController.text,
-                          //         ),
-                          //   ),
-                          // );
-                        },
+                        onPressed: () {},
                         child: Text(
                           "Login with email",
                           style: TextStyle(
