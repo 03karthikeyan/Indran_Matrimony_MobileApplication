@@ -2,13 +2,19 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'main_navigation.dart';
+import 'package:matrimony/UI_Screens/otp_screen.dart';
+// import 'main_navigation.dart';
 import '../models/user_data.dart';
 import '../services/api_service.dart';
 
 class AboutYourselfScreen extends StatefulWidget {
   final UserData userData;
-  const AboutYourselfScreen({super.key, required this.userData});
+  final String mobile;
+  const AboutYourselfScreen({
+    super.key,
+    required this.userData,
+    required this.mobile,
+  });
 
   @override
   State<AboutYourselfScreen> createState() => _AboutYourselfScreenState();
@@ -41,45 +47,70 @@ class _AboutYourselfScreenState extends State<AboutYourselfScreen> {
     }
   }
 
-  Future<void> _registerUser() async {
-    if (aboutController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Please fill about yourself field')),
-      );
-      return;
-    }
-
-    setState(() => isLoading = true);
-
-    widget.userData.aboutYourself = aboutController.text;
-
-    try {
-      final result = await ApiService.registerUser(widget.userData.toMap());
-      print(jsonEncode(widget.userData.toMap()));
-
-      if (mounted) {
-        if (result['success']) {
-          _showSuccessDialog();
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(result['error'] ?? 'Registration failed')),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
-      }
-    } finally {
-      if (mounted) {
-        setState(() => isLoading = false);
-      }
-    }
+ Future<void> _registerUser() async {
+  if (aboutController.text.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Please fill about yourself field')),
+    );
+    return;
   }
 
-  void _showSuccessDialog() {
+  setState(() => isLoading = true);
+  widget.userData.aboutYourself = aboutController.text;
+
+  try {
+    final result = await ApiService.registerUser(widget.userData.toMap());
+    print("Registration request: ${jsonEncode(widget.userData.toMap())}");
+    print("Registration response: $result");
+
+    if (mounted) {
+      if (result['success']) {
+        // ✅ Use the same mobile number you registered with
+        final mobile = widget.userData.contactNo ?? "";
+
+        if (mobile.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Mobile number missing")),
+          );
+          return;
+        }
+
+        // ✅ Trigger OTP by login API
+        final loginResult = await ApiService.login(mobile);
+        print("Login after registration response: $loginResult");
+
+        if (loginResult['success'] == 1 ||
+            loginResult['data']?['success'] == 1) {
+          // OTP sent successfully
+          _showSuccessDialog(mobile);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                loginResult['message'] ?? 'Failed to send OTP after registration',
+              ),
+            ),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(result['error'] ?? 'Registration failed')),
+        );
+      }
+    }
+  } catch (e) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+    }
+  } finally {
+    if (mounted) setState(() => isLoading = false);
+  }
+}
+
+  //registration success dialogue method
+  void _showSuccessDialog(String mobile) {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -161,7 +192,10 @@ class _AboutYourselfScreenState extends State<AboutYourselfScreen> {
                             Navigator.of(ctx).pop(); // Close dialog
                             Navigator.of(context).pushAndRemoveUntil(
                               MaterialPageRoute(
-                                builder: (context) => const MainNavigation(),
+                                builder:
+                                    (context) => OtpScreen(
+                                      mobile: mobile,
+                                    ), // ✅ Navigate to OTP
                               ),
                               (route) => false,
                             );

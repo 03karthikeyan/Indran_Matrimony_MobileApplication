@@ -1,15 +1,42 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:matrimony/UI_Screens/subscription_screen.dart';
+import 'package:matrimony/services/api_service.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final int userId; // Pass userId from login/register
+  const HomeScreen({super.key, required this.userId});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  Map<String, dynamic>? userData;
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchProfile();
+  }
+
+  Future<void> fetchProfile() async {
+    final result = await ApiService.getProfiles(widget.userId);
+
+    if (result['success']) {
+      setState(() {
+        userData = result['user_data'];
+        isLoading = false;
+      });
+    } else {
+      setState(() {
+        isLoading = false;
+      });
+      print(result['error']); // Handle error gracefully
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final pinkColor = const Color(0xFFA51C48);
@@ -43,15 +70,25 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       CircleAvatar(
                         radius: 22,
-                        backgroundImage: AssetImage('assets/user.png'),
+                        backgroundImage:
+                            isLoading
+                                ? const AssetImage('assets/user.png')
+                                : (userData != null &&
+                                    userData!['profile_img'] != null &&
+                                    userData!['profile_img']
+                                        .toString()
+                                        .isNotEmpty)
+                                ? NetworkImage(userData!['profile_img'])
+                                : const AssetImage('assets/user.png')
+                                    as ImageProvider,
                       ),
                       const SizedBox(width: 10),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            "Mr. Karthick",
-                            style: TextStyle(
+                          Text(
+                            (userData?['name'] ?? "Unknown User"),
+                            style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.w600,
                               fontSize: 17,

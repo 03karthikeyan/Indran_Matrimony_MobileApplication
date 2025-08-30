@@ -18,6 +18,8 @@ class _MatchesScreenState extends State<MatchesScreen> {
   int? userId;
   Map<String, dynamic> currentFilters = {};
 
+  String baseUrl = "https://pheonixconstructions.com/assets/profile_image/";
+
   @override
   void initState() {
     super.initState();
@@ -193,7 +195,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 16),
                           child: _MatchCard(
-                            image: match['profile_img'] ?? 'assets/user1.jpg',
+                            image: baseUrl + match['profile_img'],
                             name: match['name'] ?? 'Unknown',
                             code: match['user_id']?.toString() ?? '',
                             age: '${match['age'] ?? 0} years',
@@ -581,7 +583,39 @@ class _MatchCard extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(8),
                               ),
                             ),
-                            onPressed: () {},
+                            onPressed: () async {
+                              final prefs =
+                                  await SharedPreferences.getInstance();
+                              final senderId =
+                                  int.tryParse(
+                                    prefs.getString('user_id') ?? '1',
+                                  ) ??
+                                  1;
+                              final receiverId = int.tryParse(code) ?? 0;
+
+                              final result = await ApiService.sendInterest(
+                                senderId,
+                                receiverId,
+                              );
+
+                              if (result['success']) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      result['message'] ?? "Interest sent",
+                                    ),
+                                  ),
+                                );
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      "Failed: ${result['message']}",
+                                    ),
+                                  ),
+                                );
+                              }
+                            },
                             child: const Text(
                               "Send Interest",
                               style: TextStyle(

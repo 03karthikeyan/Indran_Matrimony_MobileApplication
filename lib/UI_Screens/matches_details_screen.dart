@@ -90,11 +90,22 @@ class _MatchesDetailsScreenState extends State<MatchesDetailsScreen> {
                   child: Stack(
                     alignment: Alignment.topRight,
                     children: [
-                      Image.asset(
-                        'assets/2.png',
+                      Image.network(
+                        "https://pheonixconstructions.com/assets/profile_image/${widget.match['profile_img']}",
                         width: double.infinity,
                         height: 180,
                         fit: BoxFit.cover,
+                        errorBuilder:
+                            (context, error, stackTrace) => Container(
+                              width: double.infinity,
+                              height: 180,
+                              color: Colors.grey[300],
+                              child: const Icon(
+                                Icons.person,
+                                size: 50,
+                                color: Colors.white,
+                              ),
+                            ),
                       ),
                       Padding(
                         padding: const EdgeInsets.only(top: 13, right: 13),
@@ -120,6 +131,7 @@ class _MatchesDetailsScreenState extends State<MatchesDetailsScreen> {
                     ],
                   ),
                 ),
+
                 Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 14,

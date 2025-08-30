@@ -1,3 +1,4 @@
+import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:flutter/material.dart';
 import 'package:matrimony/services/api_service.dart';
 import 'about_yourself_screen.dart';
@@ -23,8 +24,18 @@ class _ProfessionalDetailsScreenState extends State<ProfessionalDetailsScreen> {
   String? city;
 
   final List<String> workLocations = ['Office', 'Remote', 'Hybrid'];
-  // final List<String> states = ['Tamil Nadu', 'Kerala', 'Karnataka'];
   final List<String> cities = ['Chennai', 'Coimbatore', 'Madurai'];
+
+  final List<String> incomeRanges = [
+    "Below 2 Lakh",
+    "2 - 5 Lakh",
+    "5 - 10 Lakh",
+    "10 - 15 Lakh",
+    "15 - 25 Lakh",
+    "25 - 50 Lakh",
+    "50 Lakh - 1 Crore",
+    "Above 1 Crore",
+  ];
   List<String> stateOptions = [];
   String? selectedState;
   bool isLoading = true;
@@ -176,30 +187,48 @@ class _ProfessionalDetailsScreenState extends State<ProfessionalDetailsScreen> {
             SizedBox(height: 16),
 
             // Employed In
-            Text(
-              "Employed In:",
-              style: TextStyle(fontSize: 14, color: Colors.black87),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Employed In:",
+                  style: TextStyle(fontSize: 14, color: Colors.black87),
+                ),
+                SizedBox(height: 4),
+
+                CustomDropdown<String>.search(
+                  hintText: "Select Employment Type",
+                  items: [
+                    "Government",
+                    "Private",
+                    "Business",
+                    "Self Employed",
+                    "Defence",
+                    "Not Working",
+                  ],
+                  initialItem:
+                      employedInController.text.isNotEmpty
+                          ? employedInController.text
+                          : null, // ✅ auto select if already chosen
+                  onChanged: (value) {
+                    employedInController.text = value!;
+                  },
+                  decoration: CustomDropdownDecoration(
+                    closedBorder: Border.all(color: Colors.grey.shade400),
+                    closedBorderRadius: BorderRadius.circular(9),
+                    expandedBorder: Border.all(
+                      color: Colors.blueAccent,
+                    ), // when opened
+                    expandedBorderRadius: BorderRadius.circular(9),
+                    hintStyle: TextStyle(
+                      color: Colors.grey.shade600,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ],
             ),
-            SizedBox(height: 4),
-            TextField(
-              controller: employedInController,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: Colors.white,
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 14,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(9),
-                  borderSide: BorderSide(color: Colors.grey.shade400),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(9),
-                  borderSide: BorderSide(color: Colors.grey.shade400),
-                ),
-              ),
-            ),
+
             SizedBox(height: 16),
 
             // Occupation
@@ -230,133 +259,128 @@ class _ProfessionalDetailsScreenState extends State<ProfessionalDetailsScreen> {
             SizedBox(height: 16),
 
             // Annual Income
-            Text(
-              "Annual Income (Rs):",
-              style: TextStyle(fontSize: 14, color: Colors.black87),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Annual Income (Rs):",
+                  style: TextStyle(fontSize: 14, color: Colors.black87),
+                ),
+                SizedBox(height: 4),
+
+                CustomDropdown<String>.search(
+                  hintText: "Select Income Range",
+                  items: incomeRanges,
+                  initialItem:
+                      annualIncomeController.text.isNotEmpty
+                          ? annualIncomeController.text
+                          : null, // if already selected
+                  onChanged: (value) {
+                    annualIncomeController.text = value!;
+                  },
+                  decoration: CustomDropdownDecoration(
+                    closedBorder: Border.all(color: Colors.grey.shade400),
+                    closedBorderRadius: BorderRadius.circular(9),
+                    expandedBorder: Border.all(color: Colors.blueAccent),
+                    expandedBorderRadius: BorderRadius.circular(9),
+                    hintStyle: TextStyle(
+                      color: Colors.grey.shade600,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ],
             ),
-            SizedBox(height: 4),
-            TextField(
-              controller: annualIncomeController,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: Colors.white,
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 14,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(9),
-                  borderSide: BorderSide(color: Colors.grey.shade400),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(9),
-                  borderSide: BorderSide(color: Colors.grey.shade400),
-                ),
-              ),
-            ),
+
             SizedBox(height: 16),
 
-            // Work Location
-            Text(
-              "Work Location:",
-              style: TextStyle(fontSize: 14, color: Colors.black87),
-            ),
-            SizedBox(height: 4),
-            DropdownButtonFormField<String>(
-              value: workLocation,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: Colors.white,
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 14,
+            // Inside your widget build:
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Work Location
+                Text(
+                  "Work Location:",
+                  style: TextStyle(fontSize: 14, color: Colors.black87),
                 ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(9),
-                  borderSide: BorderSide(color: Colors.grey.shade400),
+                SizedBox(height: 4),
+                CustomDropdown<String>.search(
+                  hintText: "Select Work Location",
+                  items: workLocations,
+                  initialItem: workLocation,
+                  onChanged: (value) {
+                    setState(() => workLocation = value);
+                  },
+                  decoration: CustomDropdownDecoration(
+                    closedBorder: Border.all(color: Colors.grey.shade400),
+                    closedBorderRadius: BorderRadius.circular(9),
+                    expandedBorder: Border.all(
+                      color: Colors.blueAccent,
+                    ), // when opened
+                    expandedBorderRadius: BorderRadius.circular(9),
+                    hintStyle: TextStyle(
+                      color: Colors.grey.shade600,
+                      fontSize: 14,
+                    ),
+                  ),
                 ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(9),
-                  borderSide: BorderSide(color: Colors.grey.shade400),
-                ),
-              ),
-              hint: Text("Select"),
-              items:
-                  workLocations
-                      .map((e) => DropdownMenuItem(child: Text(e), value: e))
-                      .toList(),
-              onChanged: (v) => setState(() => workLocation = v),
-            ),
-            SizedBox(height: 16),
+                SizedBox(height: 16),
 
-            // State
-            Text(
-              "State:",
-              style: TextStyle(fontSize: 14, color: Colors.black87),
-            ),
-            SizedBox(height: 4),
-            DropdownButtonFormField<String>(
-              value: selectedState,
-              hint: const Text("Select States"),
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: Colors.white,
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 14,
+                // State
+                Text(
+                  "State:",
+                  style: TextStyle(fontSize: 14, color: Colors.black87),
                 ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(9),
-                  borderSide: BorderSide(color: Colors.grey.shade400),
+                SizedBox(height: 4),
+                CustomDropdown<String>.search(
+                  hintText: "Select State",
+                  items: stateOptions,
+                  initialItem: selectedState,
+                  onChanged: (value) {
+                    setState(() => selectedState = value);
+                  },
+                  decoration: CustomDropdownDecoration(
+                    closedBorder: Border.all(color: Colors.grey.shade400),
+                    closedBorderRadius: BorderRadius.circular(9),
+                    expandedBorder: Border.all(
+                      color: Colors.blueAccent,
+                    ), // when opened
+                    expandedBorderRadius: BorderRadius.circular(9),
+                    hintStyle: TextStyle(
+                      color: Colors.grey.shade600,
+                      fontSize: 14,
+                    ),
+                  ),
                 ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(9),
-                  borderSide: BorderSide(color: Colors.grey.shade400),
-                ),
-              ),
-              items:
-                  stateOptions.map((state) {
-                    return DropdownMenuItem(value: state, child: Text(state));
-                  }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  selectedState = value;
-                });
-              },
-            ),
-            SizedBox(height: 16),
+                SizedBox(height: 16),
 
-            // City
-            Text(
-              "City:",
-              style: TextStyle(fontSize: 14, color: Colors.black87),
-            ),
-            SizedBox(height: 4),
-            DropdownButtonFormField<String>(
-              value: city,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: Colors.white,
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 14,
+                // City
+                Text(
+                  "City:",
+                  style: TextStyle(fontSize: 14, color: Colors.black87),
                 ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(9),
-                  borderSide: BorderSide(color: Colors.grey.shade400),
+                SizedBox(height: 4),
+                CustomDropdown<String>.search(
+                  hintText: "Select City",
+                  items: cities,
+                  initialItem: city,
+                  onChanged: (value) {
+                    setState(() => city = value);
+                  },
+                  decoration: CustomDropdownDecoration(
+                    closedBorder: Border.all(color: Colors.grey.shade400),
+                    closedBorderRadius: BorderRadius.circular(9),
+                    expandedBorder: Border.all(
+                      color: Colors.blueAccent,
+                    ), // when opened
+                    expandedBorderRadius: BorderRadius.circular(9),
+                    hintStyle: TextStyle(
+                      color: Colors.grey.shade600,
+                      fontSize: 14,
+                    ),
+                  ),
                 ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(9),
-                  borderSide: BorderSide(color: Colors.grey.shade400),
-                ),
-              ),
-              hint: Text("Select"),
-              items:
-                  cities
-                      .map((e) => DropdownMenuItem(child: Text(e), value: e))
-                      .toList(),
-              onChanged: (v) => setState(() => city = v),
+              ],
             ),
 
             SizedBox(height: 30),
@@ -386,8 +410,10 @@ class _ProfessionalDetailsScreenState extends State<ProfessionalDetailsScreen> {
                       context,
                       MaterialPageRoute(
                         builder:
-                            (context) =>
-                                AboutYourselfScreen(userData: widget.userData),
+                            (context) => AboutYourselfScreen(
+                              userData: widget.userData,
+                              mobile: '',
+                            ),
                       ),
                     );
                   }

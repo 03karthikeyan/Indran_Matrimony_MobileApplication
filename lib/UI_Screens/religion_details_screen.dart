@@ -1,3 +1,4 @@
+import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:flutter/material.dart';
 import 'package:matrimony/UI_Screens/professional_details_screen.dart';
 import 'package:matrimony/services/api_service.dart';
@@ -19,7 +20,6 @@ class _ReligionDetailsScreenState extends State<ReligionDetailsScreen> {
   String? dosham;
   final casteOptions = ['Brahmin', 'Chettiar', 'Nadar', 'Vanniyar', 'Other'];
   final subCasteOptions = ['Subcaste1', 'Subcaste2', 'Subcaste3'];
-  // final religionOptions = ['Hindu', 'Muslim', 'Christian', 'Other'];
   List<String> religionOptions = [];
   String? selectedReligion;
   bool isLoading = true;
@@ -153,33 +153,26 @@ class _ReligionDetailsScreenState extends State<ReligionDetailsScreen> {
               "Religion",
               style: TextStyle(fontSize: 14, color: Colors.black87),
             ),
-            SizedBox(height: 4),
-            DropdownButtonFormField<String>(
-              value: selectedReligion,
-              hint: const Text("Select Religion"),
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: Colors.white,
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 14,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(9),
-                  borderSide: BorderSide(color: Colors.grey.shade400),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(9),
-                  borderSide: BorderSide(color: Colors.grey.shade400),
+            const SizedBox(height: 4),
+
+            CustomDropdown<String>(
+              hintText: "Select Religion",
+              items: religionOptions,
+              initialItem: selectedReligion, // keeps previously selected value
+              decoration: CustomDropdownDecoration(
+                closedFillColor: Colors.white,
+                expandedFillColor: Colors.white,
+                closedBorder: Border.all(color: Colors.grey.shade400),
+                expandedBorder: Border.all(color: Colors.grey.shade600),
+                closedBorderRadius: BorderRadius.circular(9),
+                expandedBorderRadius: BorderRadius.circular(9),
+                hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
+                headerStyle: const TextStyle(fontSize: 14, color: Colors.black),
+                listItemStyle: const TextStyle(
+                  fontSize: 14,
+                  color: Colors.black87,
                 ),
               ),
-              items:
-                  religionOptions.map((religion) {
-                    return DropdownMenuItem(
-                      value: religion,
-                      child: Text(religion),
-                    );
-                  }).toList(),
               onChanged: (value) {
                 setState(() {
                   selectedReligion = value;
@@ -200,72 +193,50 @@ class _ReligionDetailsScreenState extends State<ReligionDetailsScreen> {
             ),
             SizedBox(height: 8),
 
-            // Caste
+            /// Caste
             Text(
               "Caste",
               style: TextStyle(fontSize: 14, color: Colors.black87),
             ),
             SizedBox(height: 4),
-            DropdownButtonFormField<String>(
-              value: caste,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: Colors.white,
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 14,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(9),
-                  borderSide: BorderSide(color: Colors.grey.shade400),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(9),
-                  borderSide: BorderSide(color: Colors.grey.shade400),
-                ),
+            CustomDropdown<String>.search(
+              hintText: "Select Caste",
+              items: casteOptions,
+              initialItem: caste,
+              decoration: CustomDropdownDecoration(
+                closedFillColor: Colors.white,
+                expandedFillColor: Colors.white,
+                closedBorder: Border.all(color: Colors.grey.shade400),
+                expandedBorder: Border.all(color: Colors.grey.shade400),
+                closedBorderRadius: BorderRadius.circular(9),
+                expandedBorderRadius: BorderRadius.circular(9),
               ),
-              hint: Text("Select"),
-              items:
-                  casteOptions
-                      .map((e) => DropdownMenuItem(child: Text(e), value: e))
-                      .toList(),
-              onChanged: (v) {
-                setState(() => caste = v);
+              onChanged: (value) {
+                setState(() => caste = value);
               },
             ),
             SizedBox(height: 8),
 
-            // Sub Caste
+            /// Sub Caste
             Text(
               "Sub Caste",
               style: TextStyle(fontSize: 14, color: Colors.black87),
             ),
             SizedBox(height: 4),
-            DropdownButtonFormField<String>(
-              value: subCaste,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: Colors.white,
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 14,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(9),
-                  borderSide: BorderSide(color: Colors.grey.shade400),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(9),
-                  borderSide: BorderSide(color: Colors.grey.shade400),
-                ),
+            CustomDropdown<String>.search(
+              hintText: "Select Sub Caste",
+              items: subCasteOptions,
+              initialItem: subCaste,
+              decoration: CustomDropdownDecoration(
+                closedFillColor: Colors.white,
+                expandedFillColor: Colors.white,
+                closedBorder: Border.all(color: Colors.grey.shade400),
+                expandedBorder: Border.all(color: Colors.grey.shade400),
+                closedBorderRadius: BorderRadius.circular(9),
+                expandedBorderRadius: BorderRadius.circular(9),
               ),
-              hint: Text("Select"),
-              items:
-                  subCasteOptions
-                      .map((e) => DropdownMenuItem(child: Text(e), value: e))
-                      .toList(),
-              onChanged: (v) {
-                setState(() => subCaste = v);
+              onChanged: (value) {
+                setState(() => subCaste = value);
               },
             ),
             SizedBox(height: 8),

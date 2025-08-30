@@ -3,7 +3,7 @@
 
 
     <application
-        android:label="matrimony"
+        android:label="IndrianMatrimony"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

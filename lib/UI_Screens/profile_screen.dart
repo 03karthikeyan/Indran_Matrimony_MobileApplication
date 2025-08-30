@@ -1,10 +1,113 @@
 import 'package:flutter/material.dart';
+import 'package:matrimony/UI_Screens/EditProfileScreen.dart';
+import 'package:matrimony/UI_Screens/ProfileInsightsScreen.dart';
+import 'package:matrimony/UI_Screens/ProfileListScreen.dart';
+import 'package:matrimony/UI_Screens/interests_received_screen.dart';
 import 'package:matrimony/UI_Screens/login_screen.dart';
+import 'package:matrimony/services/api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'subscription_screen.dart';
 
-class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({Key? key}) : super(key: key);
+class ProfileScreen extends StatefulWidget {
+  final int userId;
+  const ProfileScreen({super.key, required this.userId});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  Map<String, dynamic>? userData;
+  bool isLoading = true;
+  bool isActive = true;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchProfile();
+  }
+
+  Future<void> fetchProfile() async {
+    final result = await ApiService.getProfiles(widget.userId);
+
+    if (result['success']) {
+      setState(() {
+        userData = result['user_data'];
+        // Assume API sends status field: 1 = active, 0 = deactive
+        isActive = userData?['status'].toString() == "1";
+        isLoading = false;
+      });
+    } else {
+      setState(() => isLoading = false);
+      print(result['error']);
+    }
+  }
+
+  //active & De-active
+
+  Future<void> toggleUserStatus() async {
+    // Show loader
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      final response =
+          isActive
+              ? await ApiService.deactivateUser(widget.userId)
+              : await ApiService.activateUser(widget.userId);
+
+      Navigator.pop(context); // Close loader
+
+      if (response['success'] == true) {
+        // Flip status only if API succeeded
+        setState(() => isActive = !isActive);
+
+        _showAlertDialog(
+          "Success",
+          response['message'] ?? "Status updated successfully",
+          Colors.green,
+        );
+      } else {
+        _showAlertDialog(
+          "Error",
+          response['message'] ?? "Something went wrong",
+          Colors.red,
+        );
+      }
+    } catch (e) {
+      Navigator.pop(context); // Close loader on error
+      _showAlertDialog("Error", "Network error: $e", Colors.red);
+    }
+  }
+
+  void _showAlertDialog(String title, String message, Color color) {
+    showDialog(
+      context: context,
+      builder:
+          (_) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            title: Row(
+              children: [
+                Icon(Icons.info, color: color),
+                const SizedBox(width: 8),
+                Text(title, style: TextStyle(color: color)),
+              ],
+            ),
+            content: Text(message),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("OK"),
+              ),
+            ],
+          ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,23 +147,44 @@ class ProfileScreen extends StatelessWidget {
                       const Spacer(),
                       IconButton(
                         icon: const Icon(Icons.edit, color: Colors.white),
-                        onPressed: () {},
+                        onPressed: () async {
+                          if (userData != null) {
+                            final updated = await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (_) => EditProfileScreen(
+                                      userId: widget.userId,
+                                      profileData: userData!,
+                                    ),
+                              ),
+                            );
+
+                            // If update was successful, refresh profile
+                            if (updated == true) {
+                              fetchProfile();
+                            }
+                          }
+                        },
                       ),
                     ],
                   ),
                   const SizedBox(height: 20),
                   CircleAvatar(
-                    radius: 40,
-                    backgroundColor: Colors.grey[300],
-                    child: const Icon(
-                      Icons.person,
-                      color: Colors.white,
-                      size: 50,
-                    ),
+                    radius: 22,
+                    backgroundImage:
+                        isLoading
+                            ? const AssetImage('assets/Ellipse222(1).png')
+                            : (userData != null &&
+                                userData!['profile_img'] != null &&
+                                userData!['profile_img'].toString().isNotEmpty)
+                            ? NetworkImage(userData!['profile_img'])
+                            : const AssetImage('assets/Ellipse222(1).png')
+                                as ImageProvider,
                   ),
                   const SizedBox(height: 12),
-                  const Text(
-                    'Mr. Karthick',
+                  Text(
+                    (userData?['name'] ?? "Unknown User"),
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 18,
@@ -179,6 +303,27 @@ class ProfileScreen extends StatelessWidget {
               title: 'Education & Career',
               onTap: () {},
             ),
+            //intrestRecived SCreen
+            _MenuItem(
+              icon: Icons.favorite,
+              title: 'Interests Received',
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => InterestsReceivedScreen()),
+                );
+              },
+            ),
+            //Viewed Profile list showing method
+            _MenuItem(
+              icon: Icons.history,
+              title: 'Viewed Profiles',
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => ProfileInsightsScreen()),
+                );
+              },
+            ),
+
             _MenuItem(
               icon: Icons.temple_hindu,
               title: 'Religious Background',
@@ -210,6 +355,38 @@ class ProfileScreen extends StatelessWidget {
               onTap: () {},
             ),
             _MenuItem(icon: Icons.help, title: 'Help & Support', onTap: () {}),
+            _MenuItem(
+              icon: isActive ? Icons.visibility : Icons.visibility_off,
+              title: isActive ? "Deactivate Profile" : "Activate Profile",
+              onTap: () {
+                showDialog(
+                  context: context,
+                  builder:
+                      (_) => AlertDialog(
+                        title: Text(
+                          isActive ? "Deactivate Profile" : "Activate Profile",
+                        ),
+                        content: Text(
+                          "Are you sure you want to ${isActive ? "deactivate" : "activate"} your profile?",
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text("Cancel"),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.pop(context);
+                              toggleUserStatus();
+                            },
+                            child: Text(isActive ? "Deactivate" : "Activate"),
+                          ),
+                        ],
+                      ),
+                );
+              },
+            ),
+
             _MenuItem(
               icon: Icons.logout,
               title: 'Logout',

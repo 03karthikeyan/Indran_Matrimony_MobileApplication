@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:matrimony/models/ProfileView.dart';
 
 class ApiService {
   static const String baseUrl =
@@ -228,7 +229,9 @@ class ApiService {
   }) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/get_messages.php?sender_id=$senderId&receiver_id=$receiverId'),
+        Uri.parse(
+          '$baseUrl/get_messages.php?sender_id=$senderId&receiver_id=$receiverId',
+        ),
       );
 
       if (response.statusCode == 200) {
@@ -267,5 +270,197 @@ class ApiService {
     } catch (e) {
       return {'success': false, 'message': 'Network error: $e'};
     }
+  }
+
+  //Fetching method for Profile data
+
+  static Future<Map<String, dynamic>> getProfiles(int userId) async {
+    try {
+      String url = '$baseUrl/profile_fetch.php?user_id=$userId';
+
+      final response = await http.get(Uri.parse(url));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        if (data['status'] == 'success') {
+          return {'success': true, 'user_data': data['user_data']};
+        } else {
+          return {'success': false, 'error': 'Profile not found'};
+        }
+      } else {
+        return {'success': false, 'error': 'Failed to load profile'};
+      }
+    } catch (e) {
+      return {'success': false, 'error': 'Network error: $e'};
+    }
+  }
+
+  //Active & De- active nethod
+  // Activate User
+  static Future<Map<String, dynamic>> activateUser(int userId) async {
+    try {
+      final response = await http.get(
+        Uri.parse("$baseUrl/activate_user.php?user_id=$userId"),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return {
+          "success": data['success'] == true || data['status'] == "success",
+          "message": data['message'] ?? "User activated successfully",
+        };
+      } else {
+        return {
+          "success": false,
+          "message": "Server error: ${response.statusCode}",
+        };
+      }
+    } catch (e) {
+      return {"success": false, "message": "Network error: $e"};
+    }
+  }
+
+  // Deactivate User
+  static Future<Map<String, dynamic>> deactivateUser(int userId) async {
+    try {
+      final response = await http.get(
+        Uri.parse("$baseUrl/deactivate_user.php?user_id=$userId"),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return {
+          "success": data['success'] == true || data['status'] == "success",
+          "message": data['message'] ?? "User deactivated successfully",
+        };
+      } else {
+        return {
+          "success": false,
+          "message": "Server error: ${response.statusCode}",
+        };
+      }
+    } catch (e) {
+      return {"success": false, "message": "Network error: $e"};
+    }
+  }
+
+  // Send Interest
+  static Future<Map<String, dynamic>> sendInterest(
+    int senderId,
+    int receiverId,
+  ) async {
+    final url = Uri.parse(
+      "$baseUrl/send_interest.php?sender_id=$senderId&receiver_id=$receiverId",
+    );
+    try {
+      final response = await http.get(url); // ✅ API works with GET
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        return {"success": false, "message": "Server error"};
+      }
+    } catch (e) {
+      return {"success": false, "message": e.toString()};
+    }
+  }
+
+  // Respond Interest (accept/decline)
+  static Future<Map<String, dynamic>> respondInterest(
+    int interestId,
+    int receiverId,
+    String action,
+  ) async {
+    final url = Uri.parse(
+      "$baseUrl/respond_interest.php?interest_id=$interestId&receiver_id=$receiverId&action=$action",
+    );
+    try {
+      final response = await http.get(url); // ✅ API works with GET
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        return {"success": false, "message": "Server error"};
+      }
+    } catch (e) {
+      return {"success": false, "message": e.toString()};
+    }
+  }
+
+  //Viewed Profile data API
+
+  // Who Viewed My Profile → who_viewed_my_profile.php
+  // → Shows list of users who viewed your profile.
+
+  // Recently Viewed Profiles → recently_viewed_profiles.php
+  // → Shows the profiles that you recently viewed.
+
+  // Who Viewed Profile Recently → who_viewed_profile_recently.php
+  // → Shows the users who recently viewed your profile.
+
+  // Who Viewed My Profile
+  static Future<List<ProfileView>> fetchWhoViewedMyProfile(
+    String profileId,
+    int limit,
+    int offset,
+  ) async {
+    final url = Uri.parse(
+      "$baseUrl/who_viewed_my_profile.php?profile_id=$profileId&limit=$limit&offset=$offset&fields=basic&viewer_id=1",
+    );
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['success'] == true && data['data']?['recent_profiles'] != null) {
+        return (data['data']['recent_profiles'] as List)
+            .map((e) => ProfileView.fromJson(e))
+            .toList();
+      }
+    }
+    return [];
+  }
+
+  // Recently Viewed Profiles
+  static Future<List<ProfileView>> fetchRecentlyViewedProfiles(
+    String viewerId,
+    int limit,
+    int offset,
+  ) async {
+    final url = Uri.parse(
+      "$baseUrl/recently_viewed_profiles.php?viewer_id=$viewerId&limit=$limit&offset=$offset&fields=full",
+    );
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['success'] == true && data['data']?['recently_viewed'] != null) {
+        return (data['data']['recently_viewed'] as List)
+            .map((e) => ProfileView.fromJson(e))
+            .toList();
+      }
+    }
+    return [];
+  }
+
+  // Who Viewed Profile Recently
+  static Future<List<ProfileView>> fetchWhoViewedProfileRecently(
+    String profileId,
+    int limit,
+    int offset,
+  ) async {
+    final url = Uri.parse(
+      "$baseUrl/who_viewed_profile_recently.php?profile_id=$profileId&limit=$limit&offset=$offset&fields=full",
+    );
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['success'] == true &&
+          data['data']?['viewed_by_last_3_days'] != null) {
+        return (data['data']['viewed_by_last_3_days'] as List)
+            .map((e) => ProfileView.fromJson(e))
+            .toList();
+      }
+    }
+    return [];
   }
 }

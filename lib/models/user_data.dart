@@ -47,3 +47,19 @@ class UserData {
     };
   }
 }
+
+//User profile
+
+class UserProfile {
+  final String name;
+  final String profileImg;
+
+  UserProfile({required this.name, required this.profileImg});
+
+  factory UserProfile.fromJson(Map<String, dynamic> json) {
+    return UserProfile(
+      name: json['name'] ?? '',
+      profileImg: json['profile_img'] ?? '',
+    );
+  }
+}

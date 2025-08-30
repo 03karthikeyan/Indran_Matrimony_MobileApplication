@@ -155,50 +155,73 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                       ),
                     ),
-                    SizedBox(height: 18),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Divider(
-                            thickness: 1,
-                            color: Colors.grey.shade300,
+                    SizedBox(height: 28),
+
+                    // Not a Member Section
+                    Container(
+                      margin: EdgeInsets.symmetric(horizontal: 18),
+                      padding: EdgeInsets.symmetric(
+                        vertical: 20,
+                        horizontal: 16,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.grey.shade300),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black12,
+                            blurRadius: 4,
+                            offset: Offset(0, 2),
                           ),
-                        ),
-                        SizedBox(width: 8),
-                        Text(
-                          "Or continue with",
-                          style: TextStyle(color: Colors.black54),
-                        ),
-                        SizedBox(width: 8),
-                        Expanded(
-                          child: Divider(
-                            thickness: 1,
-                            color: Colors.grey.shade300,
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          Text(
+                            "Not a Member?",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 14),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 44,
-                      child: OutlinedButton(
-                        style: OutlinedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          side: BorderSide(color: Colors.transparent),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
+                          SizedBox(height: 12),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 44,
+                            child: OutlinedButton(
+                              style: OutlinedButton.styleFrom(
+                                side: BorderSide(
+                                  color: Color(0xFFA51C48),
+                                  width: 1.4,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder:
+                                        (_) => BasicDetailsScreen(
+                                          mobile: _mobileController.text.trim(),
+                                        ),
+                                  ),
+                                );
+                              },
+                              child: Text(
+                                "Register Free",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFFA51C48),
+                                ),
+                              ),
+                            ),
                           ),
-                        ),
-                        onPressed: () {},
-                        child: Text(
-                          "Login with email",
-                          style: TextStyle(
-                            fontSize: 17,
-                            color: Colors.black87,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
+                        ],
                       ),
                     ),
                   ],

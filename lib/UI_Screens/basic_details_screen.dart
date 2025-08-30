@@ -1,4 +1,8 @@
+import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:matrimony/UI_Screens/login_screen.dart';
 import 'religion_details_screen.dart';
 import '../models/user_data.dart';
 
@@ -23,6 +27,7 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
     'Relative',
   ];
   final TextEditingController nameController = TextEditingController();
+  final TextEditingController mobileController = TextEditingController();
   final TextEditingController dobController = TextEditingController();
   final TextEditingController ageController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
@@ -38,7 +43,13 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
         backgroundColor: Colors.transparent,
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: Colors.black87),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (context) => LoginScreen()),
+              (route) => false,
+            );
+          },
         ),
       ),
       body: SingleChildScrollView(
@@ -139,6 +150,59 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
                 ),
               ),
             ),
+            SizedBox(height: 5),
+            //Mobile Number Field
+            Text(
+              "Phone number",
+              style: TextStyle(fontSize: 14, color: Colors.black87),
+            ),
+            SizedBox(height: 8),
+            Row(
+              children: [
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.horizontal(
+                      left: Radius.circular(7),
+                    ),
+                    border: Border.all(color: Colors.grey.shade400),
+                  ),
+                  child: Text(
+                    "+91",
+                    style: TextStyle(fontWeight: FontWeight.w500, fontSize: 15),
+                  ),
+                ),
+
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: const BorderRadius.horizontal(
+                        right: Radius.circular(7),
+                      ),
+                      border: Border.all(color: Colors.grey.shade400),
+                    ),
+                    child: TextField(
+                      controller: mobileController,
+                      decoration: const InputDecoration(
+                        hintText: "Enter mobile number",
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 12,
+                        ),
+                      ),
+                      keyboardType: TextInputType.number, // Only number keypad
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                        LengthLimitingTextInputFormatter(10),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
             SizedBox(height: 16),
 
             // Date Of Birth and Age
@@ -187,6 +251,17 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
                           if (picked != null) {
                             dobController.text =
                                 "${picked.day}/${picked.month}/${picked.year}";
+
+                            // 🔥 Calculate Age
+                            final today = DateTime.now();
+                            int age = today.year - picked.year;
+                            if (today.month < picked.month ||
+                                (today.month == picked.month &&
+                                    today.day < picked.day)) {
+                              age--;
+                            }
+
+                            ageController.text = age.toString(); // auto set age
                           }
                         },
                       ),
@@ -205,9 +280,9 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
                       SizedBox(height: 4),
                       TextField(
                         controller: ageController,
-                        keyboardType: TextInputType.number,
+                        readOnly: true, // 👈 make readOnly (calculated only)
                         decoration: InputDecoration(
-                          suffixIcon: Icon(Icons.arrow_drop_down, size: 20),
+                          suffixIcon: Icon(Icons.cake_outlined, size: 20),
                           filled: true,
                           fillColor: Colors.white,
                           contentPadding: EdgeInsets.symmetric(
@@ -229,17 +304,21 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
                 ),
               ],
             ),
+
             SizedBox(height: 16),
 
+            // Email ID
             // Email ID
             Text(
               "Email ID:",
               style: TextStyle(fontSize: 14, color: Colors.black87),
             ),
             SizedBox(height: 4),
-            TextField(
+            TextFormField(
               controller: emailController,
               keyboardType: TextInputType.emailAddress,
+              autovalidateMode:
+                  AutovalidateMode.onUserInteraction, // 🔥 validates instantly
               decoration: InputDecoration(
                 filled: true,
                 fillColor: Colors.white,
@@ -256,7 +335,20 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
                   borderSide: BorderSide(color: Colors.grey.shade400),
                 ),
               ),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return "Please enter your email";
+                }
+                // Simple email regex validation
+                String pattern = r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$';
+                RegExp regex = RegExp(pattern);
+                if (!regex.hasMatch(value)) {
+                  return "Enter a valid email";
+                }
+                return null; // ✅ valid email
+              },
             ),
+
             SizedBox(height: 16),
 
             // Gender
@@ -320,35 +412,43 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
               "Profile for:",
               style: TextStyle(fontSize: 14, color: Colors.black87),
             ),
-            SizedBox(height: 4),
-            DropdownButtonFormField<String>(
-              value: profileFor,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: Colors.white,
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 14,
+            const SizedBox(height: 6),
+
+            CustomDropdown<String>(
+              hintText: "Select",
+              items: profileOptions,
+              initialItem: profileFor,
+              decoration: CustomDropdownDecoration(
+                closedFillColor: Colors.white,
+                expandedFillColor: Colors.white,
+                closedBorder: Border.all(color: Colors.grey.shade400),
+                expandedBorder: Border.all(color: Colors.grey.shade600),
+                closedBorderRadius: BorderRadius.circular(9),
+                expandedBorderRadius: BorderRadius.circular(9),
+                hintStyle: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                listItemStyle: const TextStyle(
+                  fontSize: 14,
+                  color: Colors.black87,
                 ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(9),
-                  borderSide: BorderSide(color: Colors.grey.shade400),
+                closedSuffixIcon: Icon(
+                  Icons.arrow_drop_down,
+                  color: Colors.black54,
                 ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(9),
-                  borderSide: BorderSide(color: Colors.grey.shade400),
+                expandedSuffixIcon: Icon(
+                  Icons.arrow_drop_up,
+                  color: Colors.black54,
                 ),
               ),
-              hint: Text("Select"),
-              items:
-                  profileOptions
-                      .map((e) => DropdownMenuItem(child: Text(e), value: e))
-                      .toList(),
-              onChanged: (v) {
-                setState(() => profileFor = v);
+              onChanged: (value) {
+                setState(() => profileFor = value);
+              },
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return "Please select a profile type";
+                }
+                return null;
               },
             ),
-
             SizedBox(height: 30),
             SizedBox(
               width: double.infinity,
@@ -366,7 +466,8 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
                   if (_validateForm()) {
                     UserData userData = UserData();
                     userData.name = nameController.text;
-                    userData.contactNo = widget.mobile;
+                    userData.contactNo = mobileController.text;
+                    // userData.contactNo = widget.mobile;
                     userData.dob = _formatDate(dobController.text);
                     userData.age = ageController.text;
                     userData.emailId = emailController.text;

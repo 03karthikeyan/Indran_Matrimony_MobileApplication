@@ -205,7 +205,11 @@ class _OtpScreenState extends State<OtpScreen> {
 
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => MainNavigation()),
+          MaterialPageRoute(
+            builder:
+                (context) =>
+                    MainNavigation(userId: int.parse(userId.toString())),
+          ),
         );
       } else {
         print('user_id is null in API response');

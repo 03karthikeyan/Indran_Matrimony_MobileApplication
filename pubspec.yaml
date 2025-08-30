@@ -39,10 +39,19 @@ dependencies:
   image_picker: ^1.1.2
   shared_preferences: ^2.5.3
   shimmer: ^3.0.0
+  dropdown_button2: ^2.3.9
+  animated_custom_dropdown: ^3.1.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_launcher_icons: ^0.11.0
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/logo1.png"
+
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
