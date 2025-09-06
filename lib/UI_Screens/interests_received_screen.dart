@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:shimmer/shimmer.dart';
+import 'matches_details_screen.dart'; // ✅ Import your details screen
 
 class InterestsReceivedScreen extends StatefulWidget {
   const InterestsReceivedScreen({Key? key}) : super(key: key);
@@ -30,34 +34,56 @@ class _InterestsReceivedScreenState extends State<InterestsReceivedScreen> {
   }
 
   Future<void> _loadReceivedInterests() async {
-    // 🔹 Replace with API call like: ApiService.getReceivedInterests(userId!)
-    // For demo, using static data
+    setState(() => isLoading = true);
+
+    final url = Uri.parse(
+      "https://pheonixconstructions.com/Matrimony API/fetch_interested_profiles.php?user_id=$userId",
+    );
+
+    try {
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        if (data['status'] == 'success') {
+          setState(() {
+            interests = List<Map<String, dynamic>>.from(
+              data['interested_profiles'],
+            );
+            isLoading = false;
+          });
+        } else {
+          setState(() {
+            interests = [];
+            isLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      setState(() {
+        interests = [];
+        isLoading = false;
+      });
+    }
+  }
+
+  void _handleAction(int index, String action) async {
+    final interest = interests[index];
+    final result = await ApiService.respondInterest(
+      interest['interest_id'],
+      userId!,
+      action,
+    );
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(result['message'] ?? "$action success")),
+    );
+
+    // 🔹 Remove profile immediately after accept/decline
     setState(() {
-      interests = [
-        {
-          "interest_id": 1,
-          "sender_id": 6,
-          "sender_name": "Priya",
-          "age": 25,
-          "city": "Chennai",
-          "degree": "MBA",
-          "job": "Software Engineer",
-          "profile_img":
-              "https://pheonixconstructions.com/assets/profile_image/profile.jpg",
-        },
-        {
-          "interest_id": 2,
-          "sender_id": 7,
-          "sender_name": "Anitha",
-          "age": 27,
-          "city": "Bangalore",
-          "degree": "B.Tech",
-          "job": "Designer",
-          "profile_img":
-              "https://pheonixconstructions.com/assets/profile_image/profile.jpg",
-        },
-      ];
-      isLoading = false;
+      interests.removeAt(index);
     });
   }
 
@@ -83,7 +109,7 @@ class _InterestsReceivedScreenState extends State<InterestsReceivedScreen> {
       ),
       body:
           isLoading
-              ? Center(child: CircularProgressIndicator(color: pink))
+              ? _buildShimmerLoader() // ✅ shimmer loader
               : interests.isEmpty
               ? const Center(child: Text("No interests received"))
               : ListView.builder(
@@ -91,26 +117,108 @@ class _InterestsReceivedScreenState extends State<InterestsReceivedScreen> {
                 itemCount: interests.length,
                 itemBuilder: (context, index) {
                   final interest = interests[index];
-                  return _InterestCard(
-                    interest: interest,
-                    receiverId: userId!,
-                    onActionCompleted: _loadReceivedInterests,
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => MatchesDetailsScreen(match: interest),
+                        ),
+                      );
+                    },
+                    child: _InterestCard(
+                      interest: interest,
+                      onAccept: () => _handleAction(index, "accept"),
+                      onDecline: () => _handleAction(index, "decline"),
+                    ),
                   );
                 },
               ),
+    );
+  }
+
+  // ✅ Shimmer loader for interests list
+  Widget _buildShimmerLoader() {
+    return ListView.builder(
+      padding: const EdgeInsets.all(14),
+      itemCount: 5,
+      itemBuilder:
+          (_, __) => Shimmer.fromColors(
+            baseColor: Colors.grey.shade300,
+            highlightColor: Colors.grey.shade100,
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Column(
+                children: [
+                  Container(
+                    height: 160,
+                    width: double.infinity,
+                    color: Colors.grey[300],
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          height: 16,
+                          width: 120,
+                          color: Colors.grey[300],
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          height: 14,
+                          width: 180,
+                          color: Colors.grey[300],
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          height: 14,
+                          width: 100,
+                          color: Colors.grey[300],
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Container(
+                                height: 40,
+                                color: Colors.grey[300],
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Container(
+                                height: 40,
+                                color: Colors.grey[300],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
     );
   }
 }
 
 class _InterestCard extends StatelessWidget {
   final Map<String, dynamic> interest;
-  final int receiverId;
-  final VoidCallback onActionCompleted;
+  final VoidCallback onAccept;
+  final VoidCallback onDecline;
 
   const _InterestCard({
     required this.interest,
-    required this.receiverId,
-    required this.onActionCompleted,
+    required this.onAccept,
+    required this.onDecline,
   });
 
   @override
@@ -135,7 +243,7 @@ class _InterestCard extends StatelessWidget {
               topRight: Radius.circular(14),
             ),
             child: Image.network(
-              interest['profile_img'] ?? "",
+              "https://pheonixconstructions.com/assets/profile_image/${interest['profile_img'] ?? ""}",
               height: 160,
               width: double.infinity,
               fit: BoxFit.cover,
@@ -158,7 +266,7 @@ class _InterestCard extends StatelessWidget {
               children: [
                 // Name + Age + City
                 Text(
-                  "${interest['sender_name']} (${interest['age']} yrs)",
+                  "${interest['name']} (${interest['age']} yrs)",
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 18,
@@ -166,7 +274,7 @@ class _InterestCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 5),
                 Text(
-                  "${interest['degree']} • ${interest['job']}",
+                  "${interest['higher_education']} • ${interest['occupation']}",
                   style: const TextStyle(fontSize: 14, color: Colors.black87),
                 ),
                 Text(
@@ -180,19 +288,7 @@ class _InterestCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: () async {
-                          final result = await ApiService.respondInterest(
-                            interest['interest_id'],
-                            receiverId,
-                            "accept",
-                          );
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(result['message'] ?? "Accepted"),
-                            ),
-                          );
-                          onActionCompleted();
-                        },
+                        onPressed: onAccept,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.green,
                           minimumSize: const Size(0, 40),
@@ -209,19 +305,7 @@ class _InterestCard extends StatelessWidget {
                     const SizedBox(width: 10),
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: () async {
-                          final result = await ApiService.respondInterest(
-                            interest['interest_id'],
-                            receiverId,
-                            "decline",
-                          );
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(result['message'] ?? "Declined"),
-                            ),
-                          );
-                          onActionCompleted();
-                        },
+                        onPressed: onDecline,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.red,
                           minimumSize: const Size(0, 40),

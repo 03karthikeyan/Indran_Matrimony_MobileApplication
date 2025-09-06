@@ -1,14 +1,52 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:matrimony/UI_Screens/ProfileListScreen.dart';
 import '../services/api_service.dart';
 
-class ProfileInsightsScreen extends StatelessWidget {
+class ProfileInsightsScreen extends StatefulWidget {
   const ProfileInsightsScreen({super.key});
 
   @override
+  State<ProfileInsightsScreen> createState() => _ProfileInsightsScreenState();
+}
+
+class _ProfileInsightsScreenState extends State<ProfileInsightsScreen> {
+  String? userId;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserId();
+  }
+
+  Future<void> _loadUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      userId = prefs.getString("user_id"); // 👈 fetch logged-in user id
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (userId == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
     return Scaffold(
-      appBar: AppBar(title: const Text("Profile Insights")),
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
+        iconTheme: const IconThemeData(
+          color: Colors.white, // Set your desired color here
+        ),
+        title: const Text(
+          "Profile Insights",
+          style: TextStyle(color: Colors.white),
+        ),
+        backgroundColor: Colors.pink.shade700,
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -25,9 +63,10 @@ class ProfileInsightsScreen extends StatelessWidget {
                         (_) => ProfileListScreen(
                           title: "Who Viewed My Profile",
                           futureProfiles: ApiService.fetchWhoViewedMyProfile(
-                            "12",
+                            userId!,
                             10,
                             0,
+                            userId!,
                           ),
                         ),
                   ),
@@ -48,7 +87,7 @@ class ProfileInsightsScreen extends StatelessWidget {
                           title: "Recently Viewed Profiles",
                           futureProfiles:
                               ApiService.fetchRecentlyViewedProfiles(
-                                "6",
+                                userId!,
                                 10,
                                 0,
                               ),
@@ -71,7 +110,7 @@ class ProfileInsightsScreen extends StatelessWidget {
                           title: "Who Viewed Profile Recently",
                           futureProfiles:
                               ApiService.fetchWhoViewedProfileRecently(
-                                "1",
+                                userId!,
                                 10,
                                 0,
                               ),
@@ -104,13 +143,14 @@ class _InsightCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 4,
+      elevation: 3,
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: color.withOpacity(0.2),
-          child: Icon(icon, color: color),
+          radius: 24,
+          backgroundColor: color.withOpacity(0.15),
+          child: Icon(icon, color: color, size: 28),
         ),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
         trailing: const Icon(Icons.arrow_forward_ios, size: 18),
         onTap: onTap,
       ),

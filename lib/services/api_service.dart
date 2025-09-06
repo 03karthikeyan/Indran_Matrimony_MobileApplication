@@ -163,6 +163,23 @@ class ApiService {
     }
   }
 
+  //subscription Status API
+
+  static Future<Map<String, dynamic>> getSubscriptionStatus(int userId) async {
+    final url =
+        "https://pheonixconstructions.com/Matrimony%20API/subscription_status.php?user_id=$userId";
+    try {
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        return {"status": "error", "message": "Server error"};
+      }
+    } catch (e) {
+      return {"status": "error", "message": e.toString()};
+    }
+  }
+
   //Profile matches
 
   static Future<Map<String, dynamic>> getMatchingProfiles(
@@ -402,10 +419,12 @@ class ApiService {
     String profileId,
     int limit,
     int offset,
+    String viewerId, // 👈 make viewerId dynamic
   ) async {
     final url = Uri.parse(
-      "$baseUrl/who_viewed_my_profile.php?profile_id=$profileId&limit=$limit&offset=$offset&fields=basic&viewer_id=1",
+      "$baseUrl/who_viewed_my_profile.php?profile_id=$profileId&limit=$limit&offset=$offset&fields=basic&viewer_id=$viewerId",
     );
+
     final response = await http.get(url);
 
     if (response.statusCode == 200) {

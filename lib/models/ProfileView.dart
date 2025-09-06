@@ -6,6 +6,10 @@ class ProfileView {
   final String? state;
   final String? occupation;
   final String? image;
+  final String? profileId;
+  final String? userId;
+  final String? lastViewedAt;
+  final int? totalViews;
 
   ProfileView({
     required this.id,
@@ -15,6 +19,10 @@ class ProfileView {
     this.state,
     this.occupation,
     this.image,
+    this.lastViewedAt,
+    this.profileId,
+    this.totalViews,
+    this.userId,
   });
 
   factory ProfileView.fromJson(Map<String, dynamic> json) {
@@ -29,6 +37,10 @@ class ProfileView {
           json['profile_img'] != null
               ? "https://pheonixconstructions.com/assets/profile_image/${json['profile_img']}"
               : "https://via.placeholder.com/150",
+      profileId: json['profile_id'] ?? '',
+      userId: json['user_id'].toString(),
+      lastViewedAt: json['last_viewed_at'] ?? '',
+      totalViews: int.tryParse(json['total_views'].toString()) ?? 0,
     );
   }
 }

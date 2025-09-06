@@ -21,10 +21,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool isLoading = true;
   bool isActive = true;
 
+  // 🔹 Subscription
+  bool isSubscribed = false;
+  Map<String, dynamic>? subscriptionDetails;
+
   @override
   void initState() {
     super.initState();
     fetchProfile();
+    fetchSubscriptionStatus();
   }
 
   Future<void> fetchProfile() async {
@@ -40,6 +45,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
     } else {
       setState(() => isLoading = false);
       print(result['error']);
+    }
+  }
+
+  //fetch Subscription Status
+
+  Future<void> fetchSubscriptionStatus() async {
+    try {
+      final result = await ApiService.getSubscriptionStatus(widget.userId);
+      if (!mounted) return;
+
+      if (result['status'] == 'success') {
+        final v = result['subscribed'];
+        setState(() {
+          // handle true/false, 1/0, or "true"/"false"
+          isSubscribed = v == true || v == 1 || v == 'true';
+          subscriptionDetails = result['subscription_details'];
+        });
+      } else {
+        // optional: log or show a toast
+        debugPrint('Subscription check failed: ${result['message']}');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      debugPrint('Subscription fetch error: $e');
     }
   }
 
@@ -145,6 +174,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ),
                       const Spacer(),
+                      if (isSubscribed) // show badge for premium
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.amber,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Text(
+                            "Premium",
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
                       IconButton(
                         icon: const Icon(Icons.edit, color: Colors.white),
                         onPressed: () async {
@@ -160,7 +207,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                             );
 
-                            // If update was successful, refresh profile
                             if (updated == true) {
                               fetchProfile();
                             }
@@ -185,49 +231,55 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const SizedBox(height: 12),
                   Text(
                     (userData?['name'] ?? "Unknown User"),
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: 4),
+
+                  // 🔹 Membership Info
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text(
-                        'Free Member',
-                        style: TextStyle(color: Colors.white70, fontSize: 14),
+                      Text(
+                        isSubscribed ? 'Premium Member' : 'Free Member',
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 14,
+                        ),
                       ),
                       const SizedBox(width: 8),
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const SubscriptionScreen(),
+                      if (!isSubscribed) // only show upgrade if free
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const SubscriptionScreen(),
+                              ),
+                            );
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
                             ),
-                          );
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            'Upgrade',
-                            style: TextStyle(
-                              color: pinkColor,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 12,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              'Upgrade',
+                              style: TextStyle(
+                                color: pinkColor,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 12,
+                              ),
                             ),
                           ),
                         ),
-                      ),
                     ],
                   ),
                 ],

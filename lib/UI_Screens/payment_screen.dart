@@ -1,4 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class PaymentScreen extends StatefulWidget {
   final Map<String, dynamic>? plan;
@@ -11,7 +15,147 @@ class PaymentScreen extends StatefulWidget {
 class _PaymentScreenState extends State<PaymentScreen> {
   int selectedPayment = 0; // 0: UPI, 1: NetBanking, 2: Card
   final pink = const Color(0xFFA51C48);
-  
+  bool isLoading = false;
+
+  Future<void> _subscribePlan() async {
+  try {
+    setState(() => isLoading = true);
+
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userId = prefs.getString("user_id");
+    String? planId = widget.plan?['id']?.toString(); // ✅ FIXED
+
+    print("✅ User ID: $userId");
+    print("✅ Plan ID: $planId");
+    print("✅ Plan Data: ${widget.plan}");
+
+    if (userId == null || planId == null) {
+      _showErrorDialog("User ID or Plan ID missing!");
+      return;
+    }
+
+    final url =
+        "https://pheonixconstructions.com/Matrimony%20API/subscription.php?user_id=$userId&plan_id=$planId";
+    print("📡 API: $url");
+
+    final response = await http.get(Uri.parse(url));
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data["success"] == 1) {
+        _showSuccessDialog(data["message"] ?? "Subscription successful!");
+      } else {
+        _showErrorDialog(data["message"] ?? "Something went wrong!");
+      }
+    } else {
+      _showErrorDialog("Server error! Code: ${response.statusCode}");
+    }
+  } catch (e) {
+    _showErrorDialog("Error: $e");
+  } finally {
+    setState(() => isLoading = false);
+  }
+}
+
+  void _showSuccessDialog(String message) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder:
+          (_) => Dialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.verified_rounded,
+                    color: Colors.green,
+                    size: 70,
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    "Payment Successful",
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    message,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 15, color: Colors.black54),
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: pink,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 25,
+                        vertical: 12,
+                      ),
+                    ),
+                    onPressed: () {
+                      Navigator.pop(context); // close dialog
+                      Navigator.pop(
+                        context,
+                        true,
+                      ); // go back to previous screen
+                    },
+                    child: const Text(
+                      "Continue",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+    );
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder:
+          (_) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(15),
+            ),
+            title: const Text(
+              "Payment Failed",
+              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
+            ),
+            content: Text(
+              message,
+              style: const TextStyle(fontSize: 15, color: Colors.black54),
+            ),
+            actions: [
+              TextButton(
+                child: const Text(
+                  "Close",
+                  style: TextStyle(
+                    color: Colors.red,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -271,7 +415,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   ),
                   elevation: 0,
                 ),
-                onPressed: () {},
+                onPressed: _subscribePlan,
                 child: const Text(
                   "Pay Now ",
                   style: TextStyle(
