@@ -18,6 +18,10 @@ class _MatchesScreenState extends State<MatchesScreen> {
   int? userId;
   Map<String, dynamic> currentFilters = {};
 
+  TextEditingController _searchController = TextEditingController();
+  bool isSearching = false;
+  List<Map<String, dynamic>> filteredMatches = [];
+
   String baseUrl = "https://pheonixconstructions.com/assets/profile_image/";
 
   @override
@@ -107,60 +111,81 @@ class _MatchesScreenState extends State<MatchesScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F7F7),
-      appBar: AppBar(
-        backgroundColor: pink,
-        automaticallyImplyLeading: false, // hides the back button
-        iconTheme: const IconThemeData(color: Colors.white),
-        centerTitle: true, // ✅ centers the title
-        title: const Text(
-          "All matches",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-      ),
 
       body: Column(
         children: [
-          // AppBar substitute
-          // Container(
-          //   padding: const EdgeInsets.only(
-          //     top: 44,
-          //     left: 20,
-          //     right: 10,
-          //     bottom: 0,
-          //   ),
-          //   decoration: BoxDecoration(
-          //     color: pink,
-          //     borderRadius: const BorderRadius.vertical(
-          //       bottom: Radius.circular(22),
-          //     ),
-          //   ),
-          //   child: Column(
-          //     crossAxisAlignment: CrossAxisAlignment.start,
-          //     children: [
-          //       // Tabs and more icon
-          //       Row(
-          //         children: [
-          //           Expanded(
-          //             child: SingleChildScrollView(
-          //               scrollDirection: Axis.horizontal,
-          //               child: Row(
-          //                 children: [
-          //                   _TopTab(title: "All matches", selected: true),
-          //                   // _TopTab(title: "Newly joined"),
-          //                   // _TopTab(title: "Nearby matches"),
-          //                 ],
-          //               ),
-          //             ),
-          //           ),
-          //           // IconButton(
-          //           //   icon: const Icon(Icons.more_vert, color: Colors.white),
-          //           //   onPressed: () {},
-          //           // ),
-          //         ],
-          //       ),
-          //     ],
-          //   ),
-          // ),
+          Container(
+            padding: const EdgeInsets.only(
+              top: 44,
+              left: 18,
+              right: 18,
+              bottom: 16,
+            ),
+            decoration: BoxDecoration(
+              color: pink,
+              borderRadius: const BorderRadius.vertical(
+                bottom: Radius.circular(24),
+              ),
+            ),
+            child: Row(
+              children: [
+                isSearching
+                    ? Expanded(
+                      child: TextField(
+                        controller: _searchController,
+                        autofocus: true,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: const InputDecoration(
+                          hintText: "Search by name",
+                          hintStyle: TextStyle(color: Colors.white70),
+                          border: InputBorder.none,
+                        ),
+                        onChanged: (value) {
+                          setState(() {
+                            filteredMatches =
+                                matches
+                                    .where(
+                                      (match) => (match['name'] ?? '')
+                                          .toString()
+                                          .toLowerCase()
+                                          .contains(value.toLowerCase()),
+                                    )
+                                    .toList();
+                          });
+                        },
+                      ),
+                    )
+                    : const Text(
+                      'All Matches',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                const Spacer(),
+                isSearching
+                    ? IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white),
+                      onPressed: () {
+                        setState(() {
+                          isSearching = false;
+                          _searchController.clear();
+                        });
+                      },
+                    )
+                    : IconButton(
+                      icon: const Icon(Icons.search, color: Colors.white),
+                      onPressed: () {
+                        setState(() {
+                          isSearching = true;
+                          filteredMatches = List.from(matches);
+                        });
+                      },
+                    ),
+              ],
+            ),
+          ),
           // Matches filter and filter button row
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
@@ -212,13 +237,17 @@ class _MatchesScreenState extends State<MatchesScreen> {
             child:
                 isLoading
                     ? Center(child: CircularProgressIndicator(color: pink))
-                    : matches.isEmpty
+                    : (isSearching ? filteredMatches : matches).isEmpty
                     ? Center(child: Text('No matches found'))
                     : ListView.builder(
                       padding: EdgeInsets.zero,
-                      itemCount: matches.length,
+                      itemCount:
+                          isSearching ? filteredMatches.length : matches.length,
                       itemBuilder: (context, index) {
-                        final match = matches[index];
+                        final match =
+                            isSearching
+                                ? filteredMatches[index]
+                                : matches[index];
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 16),
                           child: _MatchCard(
@@ -233,8 +262,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
                             membership: true,
                             idVerified: true,
                             matchPercent: match['matchPercent'] ?? 60,
-                            interestStatus:
-                                match['interest_status'], // 'pending'/'accepted'/null
+                            interestStatus: match['interest_status'],
                             onTap: () {
                               Navigator.of(context).push(
                                 MaterialPageRoute(
@@ -246,8 +274,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
                             onSendInterest: () async {
                               await sendInterest(match['user_id']);
                               setState(() {
-                                match['interest_status'] =
-                                    'pending'; // mark as sent
+                                match['interest_status'] = 'pending';
                               });
                             },
                           ),
