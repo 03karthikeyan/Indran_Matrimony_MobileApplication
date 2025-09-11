@@ -2,8 +2,10 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:matrimony/UI_Screens/EditProfileScreen.dart';
 import 'package:matrimony/UI_Screens/Personal_Imformation.dart';
+import 'package:matrimony/UI_Screens/help_support.dart';
 import 'package:matrimony/UI_Screens/interests_received_screen.dart';
 import 'package:matrimony/UI_Screens/login_screen.dart';
+import 'package:matrimony/UI_Screens/privacy_setting.dart';
 import 'package:matrimony/models/user_data.dart';
 import 'package:matrimony/services/api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -85,159 +87,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  void _showStatusConfirmDialog(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        // localLoading is local to the sheet so we can rebuild the sheet while the API runs
-        bool localLoading = false;
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    isActive ? Icons.visibility_off : Icons.visibility,
-                    size: 40,
-                    color: isActive ? Colors.red : Colors.green,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    isActive ? "Deactivate Profile?" : "Activate Profile?",
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    "Are you sure you want to ${isActive ? "deactivate" : "activate"} your profile?",
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed:
-                              localLoading
-                                  ? null
-                                  : () => Navigator.pop(context),
-                          child: const Text("Cancel"),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                                isActive ? Colors.red : Colors.green,
-                          ),
-                          onPressed:
-                              localLoading
-                                  ? null
-                                  : () async {
-                                    setModalState(() => localLoading = true);
-
-                                    try {
-                                      // call proper API based on current status
-                                      final response =
-                                          isActive
-                                              ? await ApiService.deactivateUser(
-                                                widget.userId,
-                                              )
-                                              : await ApiService.activateUser(
-                                                widget.userId,
-                                              );
-
-                                      // refresh profile from server (authoritative source)
-                                      if (response['success'] == true) {
-                                        await fetchProfile();
-                                        // show server message
-                                        _showAlertDialog(
-                                          "Success",
-                                          response['message'] ?? "Updated",
-                                          Colors.green,
-                                        );
-                                      } else {
-                                        _showAlertDialog(
-                                          "Error",
-                                          response['message'] ?? "Failed",
-                                          Colors.red,
-                                        );
-                                      }
-                                    } catch (e) {
-                                      _showAlertDialog(
-                                        "Error",
-                                        "Network error: $e",
-                                        Colors.red,
-                                      );
-                                    } finally {
-                                      // close sheet after short delay to show success (optional)
-                                      setModalState(() => localLoading = false);
-                                      if (mounted) Navigator.pop(context);
-                                    }
-                                  },
-                          child:
-                              localLoading
-                                  ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                        Colors.white,
-                                      ),
-                                    ),
-                                  )
-                                  : Text(isActive ? "Deactivate" : "Activate"),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Future<void> toggleUserStatus() async {
-    try {
-      final response =
-          isActive
-              ? await ApiService.deactivateUser(widget.userId)
-              : await ApiService.activateUser(widget.userId);
-
-      if (response["success"] == true) {
-        setState(() {
-          isActive = !isActive;
-        });
-
-        _showAlertDialog(
-          "Success",
-          response["message"] ?? "Status updated successfully",
-          Colors.green,
-        );
-      } else {
-        _showAlertDialog(
-          "Error",
-          response["message"] ?? "Something went wrong",
-          Colors.red,
-        );
-      }
-    } catch (e) {
-      _showAlertDialog("Error", "Failed: $e", Colors.red);
-    }
-  }
-
   void _showAlertDialog(String title, String message, Color color) {
     showDialog(
       context: context,
@@ -290,19 +139,54 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  double calculateProfileCompletion(Map<String, dynamic>? data) {
+    if (data == null) return 0;
+
+    final fields = [
+      'name',
+      'contact_no',
+      'dob',
+      'age',
+      'email_id',
+      'gender',
+      'religion',
+      'inter_caste',
+      'caste',
+      'sub_caste',
+      'dosham',
+      'higher_education',
+      'employee_in',
+      'occupation',
+      'annual_income',
+      'work_location',
+      'state',
+      'city',
+      'about_yourself',
+      'profile_img',
+    ];
+
+    int filled = 0;
+    for (var field in fields) {
+      if (data[field] != null &&
+          data[field].toString().trim().isNotEmpty &&
+          data[field].toString().trim() != '0') {
+        filled++;
+      }
+    }
+
+    return (filled / fields.length) * 100;
+  }
+
   @override
   Widget build(BuildContext context) {
     final pinkColor = const Color(0xFFA51C48);
+    final completionPercent = calculateProfileCompletion(userData);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F7F7),
       body: RefreshIndicator(
         onRefresh: _refreshData,
-        child:
-        // isLoading
-        //     ? const Center(child: CircularProgressIndicator())
-        //     :
-        SingleChildScrollView(
+        child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           child: Column(
             children: [
@@ -506,7 +390,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                         const Spacer(),
                         Text(
-                          "${userData?['completion'] ?? '80'}%",
+                          "${completionPercent.toStringAsFixed(0)}%",
                           style: TextStyle(
                             color: pinkColor,
                             fontWeight: FontWeight.bold,
@@ -517,7 +401,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     const SizedBox(height: 8),
                     LinearProgressIndicator(
-                      value: ((userData?['completion'] ?? 80) / 100).toDouble(),
+                      value: (completionPercent / 100),
                       backgroundColor: Colors.grey[200],
                       valueColor: AlwaysStoppedAnimation<Color>(pinkColor),
                     ),
@@ -637,12 +521,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
               _MenuItem(
                 icon: Icons.privacy_tip,
                 title: 'Privacy Settings',
-                onTap: () {},
+                onTap:
+                    () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const PrivacySettingsScreen(),
+                      ),
+                    ),
               ),
               _MenuItem(
                 icon: Icons.help,
                 title: 'Help & Support',
-                onTap: () {},
+                onTap:
+                    () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const HelpSupportScreen(),
+                      ),
+                    ),
               ),
 
               _MenuItem(

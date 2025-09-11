@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:http/http.dart' as http;
+import 'package:matrimony/UI_Screens/EditProfileScreen.dart';
 import 'package:matrimony/UI_Screens/Message_Screen.dart';
 import 'package:matrimony/UI_Screens/ProfileListScreen.dart';
 import 'package:matrimony/UI_Screens/interests_received_screen.dart';
@@ -494,7 +495,88 @@ class _HomeScreenState extends State<HomeScreen> {
                   } else if (snapshot.hasError) {
                     return const Center(child: Text("Error loading profiles"));
                   } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return const Center(child: Text("No profiles found"));
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 20,
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            // Decorative icon
+                            Container(
+                              decoration: BoxDecoration(
+                                color: pinkColor.withOpacity(0.1),
+                                shape: BoxShape.circle,
+                              ),
+                              padding: const EdgeInsets.all(24),
+                              child: Icon(
+                                Icons.person_off,
+                                color: pinkColor,
+                                size: 48,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+
+                            // Title
+                            const Text(
+                              "No Recommendations Yet",
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+
+                            // Subtitle
+                            const Text(
+                              "Complete your profile or update preferences to see personalized matches.",
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.black54,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+
+                            // Call-to-action button
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: pinkColor,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 24,
+                                  vertical: 12,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              onPressed: () {
+                                // Navigate to profile edit or preferences page
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder:
+                                        (_) => EditProfileScreen(
+                                          userId: widget.userId,
+                                          profileData: userData!,
+                                        ),
+                                  ),
+                                );
+                              },
+                              child: const Text(
+                                "Update Profile",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
                   } else {
                     final profiles = snapshot.data!.take(10).toList();
                     return ListView.builder(
@@ -620,7 +702,76 @@ class _HomeScreenState extends State<HomeScreen> {
                   isLoading
                       ? const Center(child: CircularProgressIndicator())
                       : recentlyViewed.isEmpty
-                      ? const Center(child: Text("No recently viewed profiles"))
+                      ? SingleChildScrollView(
+                        child: Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 24),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: pinkColor.withOpacity(0.1),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  padding: const EdgeInsets.all(24),
+                                  child: Icon(
+                                    Icons.remove_red_eye_outlined,
+                                    color: pinkColor,
+                                    size: 40,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                const Text(
+                                  "No Recently Viewed Profiles",
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                const Text(
+                                  "Start browsing profiles to see your recently viewed members here.",
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.black54,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: pinkColor,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 20,
+                                      vertical: 10,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => MatchesScreen(),
+                                      ),
+                                    );
+                                  },
+                                  child: const Text(
+                                    "Browse Profiles",
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      )
                       : ListView.builder(
                         scrollDirection: Axis.horizontal,
                         itemCount: recentlyViewed.length,
@@ -637,6 +788,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         },
                       ),
             ),
+
             // Recent Interest
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),

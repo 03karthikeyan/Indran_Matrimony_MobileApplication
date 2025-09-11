@@ -400,7 +400,7 @@ class _MatchCard extends StatelessWidget {
                           ),
                         ],
                       ),
-                      child: Icon(Icons.favorite_border, color: pink, size: 26),
+                      // child: Icon(Icons.favorite_border, color: pink, size: 26),
                     ),
                   ),
                 ],

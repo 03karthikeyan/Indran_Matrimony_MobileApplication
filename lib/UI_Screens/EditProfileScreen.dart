@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
@@ -21,29 +24,70 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   late TextEditingController _nameController;
   late TextEditingController _emailController;
-  late TextEditingController _cityController;
+  late TextEditingController _contactController;
   late TextEditingController _ageController;
+  late TextEditingController _dobController;
+  late TextEditingController _cityController;
+  late TextEditingController _stateController;
+  late TextEditingController _occupationController;
+  late TextEditingController _incomeController;
+  late TextEditingController _educationController;
+  late TextEditingController _aboutController;
+  late TextEditingController _workLocationController;
+
+  String? _gender;
+  String? _religion;
+  String? _caste;
+  String? _subCaste;
+  String? _dosham;
+  String? _interCaste;
+
+  XFile? _profileImage;
 
   bool isSaving = false;
-
-  final RegExp nameRegExp = RegExp(r"^[a-zA-Z\s]+$");
-  final RegExp emailRegExp = RegExp(r"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$");
 
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(
-      text: widget.profileData['name'] ?? "",
+    final data = widget.profileData;
+
+    _nameController = TextEditingController(text: data['name'] ?? "");
+    _emailController = TextEditingController(text: data['email_id'] ?? "");
+    _contactController = TextEditingController(text: data['contact_no'] ?? "");
+    _ageController = TextEditingController(text: data['age']?.toString() ?? "");
+    _dobController = TextEditingController(text: data['dob'] ?? "");
+    _cityController = TextEditingController(text: data['city'] ?? "");
+    _stateController = TextEditingController(text: data['state'] ?? "");
+    _occupationController = TextEditingController(
+      text: data['occupation'] ?? "",
     );
-    _emailController = TextEditingController(
-      text: widget.profileData['email_id'] ?? "",
+    _incomeController = TextEditingController(
+      text: data['annual_income'] ?? "",
     );
-    _cityController = TextEditingController(
-      text: widget.profileData['city'] ?? "",
+    _educationController = TextEditingController(
+      text: data['higher_education'] ?? "",
     );
-    _ageController = TextEditingController(
-      text: widget.profileData['age']?.toString() ?? "",
+    _aboutController = TextEditingController(
+      text: data['about_yourself'] ?? "",
     );
+    _workLocationController = TextEditingController(
+      text: data['work_location'] ?? "",
+    );
+
+    _gender = data['gender'];
+    _religion = data['religion'];
+    _caste = data['caste'];
+    _subCaste = data['sub_caste'];
+    _dosham = data['dosham'];
+    _interCaste = data['inter_caste'];
+  }
+
+  Future<void> _pickImage() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+    if (image != null) {
+      setState(() => _profileImage = image);
+    }
   }
 
   Future<void> _saveProfile() async {
@@ -51,19 +95,32 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     setState(() => isSaving = true);
 
-    // ✅ Construct query parameters
+    // Construct URL or API payload (example uses GET query params, ideally should be POST)
     final url = Uri.parse(
       "https://pheonixconstructions.com/Matrimony API/profile_update.php"
       "?user_id=${widget.userId}"
       "&name=${_nameController.text.trim()}"
       "&email_id=${_emailController.text.trim()}"
+      "&contact_no=${_contactController.text.trim()}"
+      "&age=${_ageController.text.trim()}"
+      "&dob=${_dobController.text.trim()}"
       "&city=${_cityController.text.trim()}"
-      "&age=${_ageController.text.trim()}",
+      "&state=${_stateController.text.trim()}"
+      "&occupation=${_occupationController.text.trim()}"
+      "&annual_income=${_incomeController.text.trim()}"
+      "&higher_education=${_educationController.text.trim()}"
+      "&work_location=${_workLocationController.text.trim()}"
+      "&about_yourself=${_aboutController.text.trim()}"
+      "&gender=$_gender"
+      "&religion=$_religion"
+      "&caste=$_caste"
+      "&sub_caste=$_subCaste"
+      "&dosham=$_dosham"
+      "&inter_caste=$_interCaste",
     );
 
     try {
       final response = await http.get(url);
-
       setState(() => isSaving = false);
 
       if (response.statusCode == 200) {
@@ -72,7 +129,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text("Profile updated successfully!")),
           );
-          Navigator.pop(context, true); // return true to refresh profile
+          Navigator.pop(context, true); // refresh profile
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(data["message"] ?? "Update failed")),
@@ -101,21 +158,52 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
-        iconTheme: const IconThemeData(
-          color: Colors.white, // Set your desired color here
-        ),
+        iconTheme: const IconThemeData(color: Colors.white),
         title: const Text(
           "Edit Profile",
           style: TextStyle(color: Colors.white),
         ),
         backgroundColor: pinkColor,
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
-          child: ListView(
+          child: Column(
             children: [
+              // Profile Image
+              Stack(
+                children: [
+                  CircleAvatar(
+                    radius: 50,
+                    backgroundImage:
+                        _profileImage != null
+                            ? FileImage(File(_profileImage!.path))
+                            : NetworkImage(
+                                  widget.profileData['profile_img'] ?? "",
+                                )
+                                as ImageProvider,
+                  ),
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: GestureDetector(
+                      onTap: _pickImage,
+                      child: CircleAvatar(
+                        radius: 15,
+                        backgroundColor: pinkColor,
+                        child: const Icon(
+                          Icons.edit,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+
               _buildTextField("Full Name", _nameController),
               const SizedBox(height: 12),
               _buildTextField(
@@ -124,13 +212,65 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 keyboardType: TextInputType.emailAddress,
               ),
               const SizedBox(height: 12),
-              _buildTextField("City", _cityController),
+              _buildTextField(
+                "Contact No",
+                _contactController,
+                keyboardType: TextInputType.phone,
+              ),
               const SizedBox(height: 12),
               _buildTextField(
                 "Age",
                 _ageController,
                 keyboardType: TextInputType.number,
               ),
+              const SizedBox(height: 12),
+              _buildTextField(
+                "DOB",
+                _dobController,
+                readOnly: true,
+                onTap: _pickDate,
+              ),
+              const SizedBox(height: 12),
+              _buildDropdown(
+                "Gender",
+                ["Male", "Female"],
+                _gender,
+                (v) => setState(() => _gender = v),
+              ),
+              const SizedBox(height: 12),
+              _buildDropdown(
+                "Religion",
+                ["Hindu", "Muslim", "Christian"],
+                _religion,
+                (v) => setState(() => _religion = v),
+              ),
+              const SizedBox(height: 12),
+              _buildTextField(
+                "Caste",
+                TextEditingController(text: _caste),
+                readOnly: true,
+              ),
+              const SizedBox(height: 12),
+              _buildTextField(
+                "Sub-Caste",
+                TextEditingController(text: _subCaste),
+                readOnly: true,
+              ),
+              const SizedBox(height: 12),
+              _buildTextField("Education", _educationController),
+              const SizedBox(height: 12),
+              _buildTextField("Occupation", _occupationController),
+              const SizedBox(height: 12),
+              _buildTextField(
+                "Annual Income",
+                _incomeController,
+                keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: 12),
+              _buildTextField("Work Location", _workLocationController),
+              const SizedBox(height: 12),
+              _buildTextField("About Yourself", _aboutController, maxLines: 4),
+
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: isSaving ? null : _saveProfile,
@@ -160,31 +300,59 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     String label,
     TextEditingController controller, {
     TextInputType keyboardType = TextInputType.text,
+    bool readOnly = false,
+    int maxLines = 1,
+    VoidCallback? onTap,
   }) {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
-      validator: (value) {
-        if (value == null || value.trim().isEmpty) {
-          return "$label cannot be empty";
-        }
-
-        // ✅ Name validation
-        if (label == "Full Name" && !nameRegExp.hasMatch(value.trim())) {
-          return "Name can only contain alphabets and spaces";
-        }
-
-        // ✅ Email validation
-        if (label == "Email" && !emailRegExp.hasMatch(value.trim())) {
-          return "Enter a valid email address";
-        }
-
-        return null;
-      },
+      readOnly: readOnly,
+      maxLines: maxLines,
+      onTap: onTap,
+      validator:
+          (value) =>
+              (value == null || value.trim().isEmpty)
+                  ? "$label cannot be empty"
+                  : null,
       decoration: InputDecoration(
         labelText: label,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
+  }
+
+  Widget _buildDropdown(
+    String label,
+    List<String> options,
+    String? selectedValue,
+    ValueChanged<String?> onChanged,
+  ) {
+    return DropdownButtonFormField<String>(
+      value: selectedValue,
+      items:
+          options
+              .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+              .toList(),
+      onChanged: onChanged,
+      decoration: InputDecoration(
+        labelText: label,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+      validator: (v) => v == null || v.isEmpty ? "Please select $label" : null,
+    );
+  }
+
+  Future<void> _pickDate() async {
+    DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.tryParse(_dobController.text) ?? DateTime(2000),
+      firstDate: DateTime(1950),
+      lastDate: DateTime.now(),
+    );
+    if (picked != null) {
+      _dobController.text =
+          "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
+    }
   }
 }

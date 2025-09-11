@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:matrimony/UI_Screens/EditProfileScreen.dart';
 import 'dart:convert';
 import 'package:matrimony/models/user_data.dart';
 import 'package:matrimony/services/api_service.dart';
@@ -74,20 +75,6 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
         SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
       );
     }
-  }
-
-  void _editProfile() {
-    // 👉 Navigate to your edit profile screen
-    // Navigator.push(
-    //   context,
-    //   MaterialPageRoute(
-    //     builder:
-    //         (_) => Scaffold(
-    //           appBar: AppBar(title: const Text("Edit Profile")),
-    //           body: const Center(child: Text("Edit profile screen here...")),
-    //         ),
-    //   ),
-    // );
   }
 
   @override
@@ -169,21 +156,9 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.pinkAccent,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          ),
-                          onPressed: _editProfile,
-                          icon: const Icon(Icons.edit, color: Colors.white),
-                          label: const Text(
-                            "Edit",
-                            style: TextStyle(color: Colors.white),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
+                       
+
+                        // const SizedBox(width: 12),
                         ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(
                             backgroundColor:
