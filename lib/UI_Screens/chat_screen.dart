@@ -103,10 +103,12 @@ class _ChatScreenState extends State<ChatScreen> {
                           profileImg: sender['profile_img'] ?? "",
                           unreadCount: 0, // API doesn’t provide → set 0
                           isOnline: false, // API doesn’t provide → set false
-                          senderId:
-                              widget.userId.toString(), // logged-in user id
+                          loggedInUserId: widget.userId.toString(),
+                          messageSenderId:
+                              sender['sender_id'].toString(), // from API
                           receiverId:
                               sender['user_id'].toString(), // chat partner id
+                          isSeen: sender['is_seen'] ?? "0",
                         );
                       },
                     ),
@@ -124,8 +126,10 @@ class _ChatItem extends StatelessWidget {
   final String profileImg;
   final int unreadCount;
   final bool isOnline;
-  final String senderId; // logged-in user id
+  final String loggedInUserId; // logged-in user id
+  final String messageSenderId; // actual sender of last message
   final String receiverId; // chat partner id
+  final String isSeen; // "0" = not seen, "1" = seen
 
   const _ChatItem({
     required this.name,
@@ -134,8 +138,10 @@ class _ChatItem extends StatelessWidget {
     required this.profileImg,
     required this.unreadCount,
     required this.isOnline,
-    required this.senderId,
+    required this.loggedInUserId,
+    required this.messageSenderId,
     required this.receiverId,
+    required this.isSeen,
   });
 
   @override
@@ -143,20 +149,30 @@ class _ChatItem extends StatelessWidget {
     final pinkColor = const Color(0xFFA51C48);
 
     return InkWell(
-      onTap: () {
-        // Navigate to MessageScreen
+      onTap: () async {
+        // 👁 Mark as read API call
+        final url = Uri.parse(
+          "https://pheonixconstructions.com/Matrimony API/mark_as_read.php?sender_id=$receiverId&receiver_id=$loggedInUserId",
+        );
+        await http.get(url);
+
+        // Navigate to message screen
         Navigator.push(
           context,
           MaterialPageRoute(
             builder:
                 (context) => MessageScreen(
-                  senderId: senderId,
+                  senderId: loggedInUserId,
                   receiverId: receiverId,
                   receiverName: name,
                 ),
           ),
-        );
+        ).then((_) {
+          // Refresh chat list after returning
+          (context as Element).markNeedsBuild();
+        });
       },
+
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         padding: const EdgeInsets.all(12),
@@ -167,6 +183,7 @@ class _ChatItem extends StatelessWidget {
         ),
         child: Row(
           children: [
+            // Avatar
             Stack(
               children: [
                 CircleAvatar(
@@ -200,10 +217,13 @@ class _ChatItem extends StatelessWidget {
               ],
             ),
             const SizedBox(width: 12),
+
+            // Chat content
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Name + time
                   Row(
                     children: [
                       Text(
@@ -215,7 +235,7 @@ class _ChatItem extends StatelessWidget {
                       ),
                       const Spacer(),
                       Text(
-                        time,
+                        formatChatDate(time),
                         style: const TextStyle(
                           fontSize: 12,
                           color: Colors.black54,
@@ -224,26 +244,46 @@ class _ChatItem extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 4),
+
+                  // Message + ticks + unread badge
                   Row(
                     children: [
                       Expanded(
-                        child: Text(
-                          lastMessage,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color:
-                                unreadCount > 0
-                                    ? Colors.black87
-                                    : Colors.black54,
-                            fontWeight:
-                                unreadCount > 0
-                                    ? FontWeight.w500
-                                    : FontWeight.normal,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                        child: Row(
+                          children: [
+                            // ✅ Show tick marks only if logged-in user sent last message
+                            if (messageSenderId == loggedInUserId) ...[
+                              Icon(
+                                isSeen == "1" ? Icons.done_all : Icons.done,
+                                size: 16,
+                                color:
+                                    isSeen == "1" ? Colors.blue : Colors.grey,
+                              ),
+                              const SizedBox(width: 4),
+                            ],
+                            Expanded(
+                              child: Text(
+                                lastMessage,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color:
+                                      unreadCount > 0
+                                          ? Colors.black87
+                                          : Colors.black54,
+                                  fontWeight:
+                                      unreadCount > 0
+                                          ? FontWeight.w500
+                                          : FontWeight.normal,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
+
+                      // Unread count badge
                       if (unreadCount > 0)
                         Container(
                           padding: const EdgeInsets.symmetric(
@@ -272,5 +312,26 @@ class _ChatItem extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+String formatChatDate(String dateTime) {
+  try {
+    final now = DateTime.now();
+    final msgDate = DateTime.parse(dateTime);
+
+    if (msgDate.year == now.year &&
+        msgDate.month == now.month &&
+        msgDate.day == now.day) {
+      return "Today";
+    } else if (msgDate.year == now.year &&
+        msgDate.month == now.month &&
+        msgDate.day == now.day - 1) {
+      return "Yesterday";
+    } else {
+      return "${msgDate.day}/${msgDate.month}/${msgDate.year}";
+    }
+  } catch (e) {
+    return dateTime; // fallback if parse fails
   }
 }

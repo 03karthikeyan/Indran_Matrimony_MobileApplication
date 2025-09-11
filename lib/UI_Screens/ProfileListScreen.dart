@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:matrimony/UI_Screens/matches_details_screen.dart';
 import 'package:matrimony/models/ProfileView.dart';
 import 'package:shimmer/shimmer.dart';
 

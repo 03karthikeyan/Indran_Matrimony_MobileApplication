@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:matrimony/models/ProfileView.dart';
 
@@ -314,19 +315,14 @@ class ApiService {
   }
 
   //Active & De- active nethod
-  // Activate User
+  // inside ApiService (import 'dart:convert'; import 'package:http/http.dart' as http;)
   static Future<Map<String, dynamic>> activateUser(int userId) async {
+    final url = "$baseUrl/activate_user.php?user_id=$userId";
     try {
-      final response = await http.get(
-        Uri.parse("$baseUrl/activate_user.php?user_id=$userId"),
-      );
-
+      final uri = Uri.parse(Uri.encodeFull(url));
+      final response = await http.get(uri);
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        return {
-          "success": data['success'] == true || data['status'] == "success",
-          "message": data['message'] ?? "User activated successfully",
-        };
+        return json.decode(response.body);
       } else {
         return {
           "success": false,
@@ -338,19 +334,16 @@ class ApiService {
     }
   }
 
-  // Deactivate User
+  // Notice: user gave the endpoint name `de_activete_user.php` earlier.
+  // Use whichever is the correct endpoint on the server. I include the spelled version you posted:
   static Future<Map<String, dynamic>> deactivateUser(int userId) async {
+    final url =
+        "$baseUrl/de_activete_user.php?user_id=$userId"; // <--- use server's exact file name
     try {
-      final response = await http.get(
-        Uri.parse("$baseUrl/deactivate_user.php?user_id=$userId"),
-      );
-
+      final uri = Uri.parse(Uri.encodeFull(url));
+      final response = await http.get(uri);
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        return {
-          "success": data['success'] == true || data['status'] == "success",
-          "message": data['message'] ?? "User deactivated successfully",
-        };
+        return json.decode(response.body);
       } else {
         return {
           "success": false,
@@ -481,5 +474,25 @@ class ApiService {
       }
     }
     return [];
+  }
+
+  //upload image
+  static Future<Map<String, dynamic>> uploadProfileImage(
+    int userId,
+    File imageFile,
+  ) async {
+    var request = http.MultipartRequest(
+      'POST',
+      Uri.parse('$baseUrl/uploadProfileImage.php'),
+    );
+    request.fields['user_id'] = userId.toString();
+    request.files.add(
+      await http.MultipartFile.fromPath('profile_img', imageFile.path),
+    );
+
+    final response = await request.send();
+    final responseData = await http.Response.fromStream(response);
+
+    return json.decode(responseData.body);
   }
 }

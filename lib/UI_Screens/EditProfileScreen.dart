@@ -26,6 +26,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   bool isSaving = false;
 
+  final RegExp nameRegExp = RegExp(r"^[a-zA-Z\s]+$");
+  final RegExp emailRegExp = RegExp(r"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$");
+
   @override
   void initState() {
     super.initState();
@@ -161,9 +164,23 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
-      validator:
-          (value) =>
-              value == null || value.isEmpty ? "$label cannot be empty" : null,
+      validator: (value) {
+        if (value == null || value.trim().isEmpty) {
+          return "$label cannot be empty";
+        }
+
+        // ✅ Name validation
+        if (label == "Full Name" && !nameRegExp.hasMatch(value.trim())) {
+          return "Name can only contain alphabets and spaces";
+        }
+
+        // ✅ Email validation
+        if (label == "Email" && !emailRegExp.hasMatch(value.trim())) {
+          return "Enter a valid email address";
+        }
+
+        return null;
+      },
       decoration: InputDecoration(
         labelText: label,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),

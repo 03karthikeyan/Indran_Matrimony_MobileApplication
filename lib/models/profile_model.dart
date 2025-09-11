@@ -19,4 +19,14 @@ class Profile {
       profileImg: json['profile_img'] ?? '',
     );
   }
+
+  // ✅ Add this method
+  Map<String, dynamic> toJson() {
+    return {
+      'user_id': userId,
+      'name': name,
+      'age': age,
+      'profile_img': profileImg,
+    };
+  }
 }

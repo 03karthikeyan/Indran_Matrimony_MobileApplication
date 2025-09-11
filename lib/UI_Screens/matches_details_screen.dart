@@ -334,26 +334,14 @@ class _MatchesDetailsScreenState extends State<MatchesDetailsScreen> {
                     Text("${widget.match['age'] ?? '--'} Years"),
                   ],
                 ),
-                TableRow(
-                  children: [
-                    const Text("Physique"),
-                    Text(
-                      "${widget.match['weight'] ?? '--'} Kg | ${widget.match['height'] ?? '--'}",
-                    ),
-                  ],
-                ),
+
                 TableRow(
                   children: [
                     const Text("Language"),
-                    Text(widget.match['languages'] ?? '--'),
+                    Text('Tamil,English,Hindi'),
                   ],
                 ),
-                TableRow(
-                  children: [
-                    const Text("Marital Status"),
-                    Text(widget.match['marital_status'] ?? '--'),
-                  ],
-                ),
+
                 TableRow(
                   children: [
                     const Text("Lives in"),
@@ -362,22 +350,12 @@ class _MatchesDetailsScreenState extends State<MatchesDetailsScreen> {
                 ),
                 TableRow(
                   children: [
-                    const Text("Citizenship"),
-                    Text(widget.match['citizenship'] ?? '--'),
+                    const Text("State"),
+                    Text(widget.match['state'] ?? '--'),
                   ],
                 ),
-                TableRow(
-                  children: [
-                    const Text("Smoking Habits"),
-                    Text(widget.match['smoking'] ?? '--'),
-                  ],
-                ),
-                TableRow(
-                  children: [
-                    const Text("Drinking Habits"),
-                    Text(widget.match['drinking'] ?? '--'),
-                  ],
-                ),
+                TableRow(children: [const Text("Smoking Habits"), Text('No')]),
+                TableRow(children: [const Text("Drinking Habits"), Text('No')]),
               ],
             ),
           ),
@@ -748,51 +726,8 @@ class _MatchesDetailsScreenState extends State<MatchesDetailsScreen> {
               ],
             ),
           ),
+
           // Profiles you may like
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: Row(
-              children: [
-                const Text(
-                  "Profiles you may like",
-                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
-                ),
-                const Spacer(),
-                Text(
-                  "View All",
-                  style: TextStyle(
-                    color: pink,
-                    fontWeight: FontWeight.w500,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          SizedBox(
-            height: 98,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.only(left: 12),
-              children: [
-                _ProfileSuggestionCard(
-                  name: "Sri",
-                  age: 26,
-                  image: 'assets/images/user2.jpg',
-                ),
-                _ProfileSuggestionCard(
-                  name: "Ramya Varanasi",
-                  age: 24,
-                  image: 'assets/images/user1.jpg',
-                ),
-                _ProfileSuggestionCard(
-                  name: "Shalini M",
-                  age: 24,
-                  image: 'assets/images/user2.jpg',
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );

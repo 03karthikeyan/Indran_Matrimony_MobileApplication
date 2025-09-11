@@ -3,10 +3,14 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:http/http.dart' as http;
+import 'package:matrimony/UI_Screens/Message_Screen.dart';
 import 'package:matrimony/UI_Screens/ProfileListScreen.dart';
 import 'package:matrimony/UI_Screens/interests_received_screen.dart';
+import 'package:matrimony/UI_Screens/matches_details_screen.dart';
 import 'package:matrimony/UI_Screens/matches_screen.dart';
+import 'package:matrimony/UI_Screens/profile_screen.dart';
 import 'package:matrimony/UI_Screens/subscription_screen.dart';
+import 'package:matrimony/models/ProfileView.dart';
 import 'package:matrimony/models/interest_Profile_Model.dart';
 import 'package:matrimony/models/profile_model.dart';
 import 'package:matrimony/services/api_service.dart';
@@ -27,6 +31,8 @@ class _HomeScreenState extends State<HomeScreen> {
   int profileViewsCount = 0;
   int matchesCount = 0;
   int pendingCount = 0;
+  List<ProfileView> recentlyViewed = [];
+  int totalCount = 0;
 
   // 🔹 Subscription
   bool isSubscribed = false;
@@ -43,6 +49,28 @@ class _HomeScreenState extends State<HomeScreen> {
     _interestsFuture = fetchInterestedProfiles(); // ✅ cache once
     _fetchStats();
     fetchSubscriptionStatus();
+    _fetchRecentlyViewed();
+  }
+
+  //Recent view
+  Future<void> _fetchRecentlyViewed() async {
+    try {
+      final profiles = await ApiService.fetchRecentlyViewedProfiles(
+        widget.userId.toString(), // 🔹 convert int → String
+        10, // limit
+        0, // offset
+      );
+
+      setState(() {
+        recentlyViewed = profiles;
+        totalCount =
+            profiles.length; // you can replace with API pagination if available
+        isLoading = false;
+      });
+    } catch (e) {
+      debugPrint("Error fetching recently viewed: $e");
+      setState(() => isLoading = false);
+    }
   }
 
   //fetch Subscription Status
@@ -207,59 +235,99 @@ class _HomeScreenState extends State<HomeScreen> {
                 top: 44,
                 left: 18,
                 right: 18,
-                bottom: 12,
+                bottom: 16,
               ),
               decoration: BoxDecoration(
                 color: pinkColor,
                 borderRadius: const BorderRadius.vertical(
                   bottom: Radius.circular(24),
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // User Info Row
                   Row(
                     children: [
-                      CircleAvatar(
-                        radius: 22,
-                        backgroundImage:
-                            isLoading
-                                ? const AssetImage('assets/user.png')
-                                : (userData != null &&
-                                    userData!['profile_img'] != null &&
-                                    userData!['profile_img']
-                                        .toString()
-                                        .isNotEmpty)
-                                ? NetworkImage(userData!['profile_img'])
-                                : const AssetImage('assets/user.png')
-                                    as ImageProvider,
+                      // Profile Image
+                      InkWell(
+                        borderRadius: BorderRadius.circular(
+                          30,
+                        ), // optional, matches avatar shape
+                        onTap: () {
+                          if (userData != null &&
+                              userData!['user_id'] != null) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (context) => ProfileScreen(
+                                      userId: int.parse(
+                                        userData!['user_id'].toString(),
+                                      ),
+                                    ),
+                              ),
+                            );
+                          }
+                        },
+                        child: CircleAvatar(
+                          radius: 26,
+                          backgroundImage:
+                              isLoading
+                                  ? const AssetImage('assets/user.png')
+                                  : (userData != null &&
+                                      userData!['profile_img'] != null &&
+                                      userData!['profile_img']
+                                          .toString()
+                                          .isNotEmpty)
+                                  ? NetworkImage(userData!['profile_img'])
+                                  : const AssetImage('assets/user.png')
+                                      as ImageProvider,
+                        ),
                       ),
-                      const SizedBox(width: 10),
+
+                      const SizedBox(width: 12),
+
+                      // Name + Membership
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            (userData?['name'] ?? "Unknown User"),
+                            (userData?['name'] ?? "Guest User"),
                             style: const TextStyle(
                               color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 17,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 18,
                             ),
                           ),
-                          // 🔹 Membership Info
+                          const SizedBox(height: 2),
                           Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
+                              Icon(
+                                isSubscribed ? Icons.verified : Icons.lock_open,
+                                size: 16,
+                                color:
+                                    isSubscribed
+                                        ? Colors.green
+                                        : Colors.white70,
+                              ),
+
+                              const SizedBox(width: 4),
                               Text(
                                 isSubscribed ? 'Premium Member' : 'Free Member',
                                 style: const TextStyle(
                                   color: Colors.white70,
-                                  fontSize: 14,
+                                  fontSize: 13,
                                 ),
                               ),
-                              const SizedBox(width: 8),
-                              if (!isSubscribed) // only show upgrade if free
+                              if (!isSubscribed) ...[
+                                const SizedBox(width: 8),
                                 GestureDetector(
                                   onTap: () {
                                     Navigator.push(
@@ -272,12 +340,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                   },
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
+                                      horizontal: 10,
                                       vertical: 4,
                                     ),
                                     decoration: BoxDecoration(
                                       color: Colors.white,
-                                      borderRadius: BorderRadius.circular(12),
+                                      borderRadius: BorderRadius.circular(16),
                                     ),
                                     child: Text(
                                       'Upgrade',
@@ -289,75 +357,28 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ),
                                   ),
                                 ),
+                              ],
                             ],
                           ),
                         ],
                       ),
+
                       const Spacer(),
-                      const Icon(
-                        Icons.notifications_none,
-                        color: Colors.white,
-                        size: 28,
+                      // Search
+                      Container(
+                        decoration: const BoxDecoration(
+                          color: Colors.white24,
+                          shape: BoxShape.circle,
+                        ),
+                        padding: const EdgeInsets.all(6),
+                        child: const Icon(
+                          Icons.search,
+                          color: Colors.white,
+                          size: 22,
+                        ),
                       ),
-                      const SizedBox(width: 10),
-                      const Icon(Icons.search, color: Colors.white, size: 28),
                     ],
                   ),
-                  const SizedBox(height: 18),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 14,
-                      horizontal: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFBF406D),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      children: [
-                        const Text(
-                          "Profile Completion",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const Spacer(),
-                        const Text(
-                          "80%",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Container(
-                    margin: const EdgeInsets.symmetric(vertical: 4),
-                    height: 7,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: Colors.white24,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Stack(
-                      children: [
-                        FractionallySizedBox(
-                          widthFactor: profileCompletion,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFFC954),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
                 ],
               ),
             ),
@@ -486,6 +507,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           age: profile.age,
                           imageUrl:
                               "https://pheonixconstructions.com/assets/profile_image/${profile.profileImg}",
+                          match: profile.toJson(), // pass map here
                         );
                       },
                     );
@@ -568,46 +590,52 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    "New Matches (234)",
-                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
-                  ),
                   Text(
-                    "See all",
-                    style: TextStyle(
-                      color: pinkColor,
-                      fontWeight: FontWeight.w500,
+                    "Recently Viewed ($totalCount)",
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () {
+                      // Navigate to full list screen
+                    },
+                    child: Text(
+                      "See all",
+                      style: TextStyle(
+                        color: pinkColor,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
-            Container(
+
+            // List
+            SizedBox(
               height: 170,
-              margin: const EdgeInsets.only(left: 18),
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                children: [
-                  _MatchCard(
-                    name: "Priya",
-                    age: 24,
-                    job: "Software Engineer",
-                    location: "Chennai",
-                  ),
-                  _MatchCard(
-                    name: "Seetha",
-                    age: 29,
-                    job: "Doctor",
-                    location: "Coimbatore",
-                  ),
-                  _MatchCard(
-                    name: "Ramya Varanasi",
-                    age: 28,
-                    job: "Business Analyst",
-                    location: "Madurai",
-                  ),
-                ],
-              ),
+              child:
+                  isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : recentlyViewed.isEmpty
+                      ? const Center(child: Text("No recently viewed profiles"))
+                      : ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: recentlyViewed.length,
+                        itemBuilder: (context, index) {
+                          final profile = recentlyViewed[index];
+                          return _MatchCard(
+                            name: profile.name,
+                            job: profile.occupation ?? "",
+                            location: profile.city ?? "",
+                            imageUrl: profile.image,
+                            view: profile.totalViews ?? 0,
+                            ProfileView: profile.toJson(),
+                          );
+                        },
+                      ),
             ),
             // Recent Interest
             Padding(
@@ -650,73 +678,20 @@ class _HomeScreenState extends State<HomeScreen> {
                     children:
                         profiles.map((profile) {
                           return _InterestCard(
+                            profileId:
+                                profile.interestId.toString(), // 👈 Add this
                             name: profile.name,
                             age: profile.age,
                             time: _getTimeAgo(profile.createdAt),
                             city: "${profile.city}, ${profile.state}",
                             tags: [profile.higherEducation, profile.occupation],
-                            profileImg:
-                                profile
-                                    .profileImg, // 👉 only file name like "profile.jpg"
+                            profileImg: profile.profileImg,
+                            senderId: widget.userId.toString(),
                           );
                         }).toList(),
                   );
                 }
               },
-            ),
-
-            // Success Stories
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-              child: const Text(
-                "Success Stories",
-                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
-              ),
-            ),
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFE4EC),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 16,
-                        backgroundImage: AssetImage('assets/user.png'),
-                      ),
-                      const SizedBox(width: 10),
-                      const Text(
-                        "Arun & Meena",
-                        style: TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        "Matched in June 2023",
-                        style: TextStyle(fontSize: 13, color: Colors.black54),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    "\"We found each other on Indran Matrimony and instantly connected. After 6 months of getting to know each other, we're now happily married!\"",
-                    style: TextStyle(fontSize: 14, color: Colors.black87),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    "Read their story >",
-                    style: TextStyle(
-                      color: pinkColor,
-                      fontWeight: FontWeight.w500,
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-              ),
             ),
             const SizedBox(height: 20),
           ],
@@ -800,41 +775,59 @@ class _RecommendationCard extends StatelessWidget {
   final String name;
   final int age;
   final String imageUrl;
+  final Map<String, dynamic> match; // pass entire profile
 
   const _RecommendationCard({
     Key? key,
     required this.name,
     required this.age,
     required this.imageUrl,
+    required this.match, // new
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 100,
-      margin: const EdgeInsets.only(right: 12),
-      child: Column(
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(50),
-            child: Image.network(
-              imageUrl,
-              width: 70,
-              height: 70,
-              fit: BoxFit.cover,
-              errorBuilder:
-                  (context, error, stackTrace) => Icon(Icons.person, size: 70),
+    return InkWell(
+      onTap: () {
+        // Navigate to MatchesDetailsScreen with selected profile
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => MatchesDetailsScreen(match: match),
+          ),
+        );
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        width: 100,
+        margin: const EdgeInsets.only(right: 12),
+        child: Column(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(50),
+              child: Image.network(
+                imageUrl,
+                width: 70,
+                height: 70,
+                fit: BoxFit.cover,
+                errorBuilder:
+                    (context, error, stackTrace) =>
+                        const Icon(Icons.person, size: 70),
+              ),
             ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            name,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontWeight: FontWeight.w500),
-          ),
-          Text("$age yrs", style: TextStyle(color: Colors.grey, fontSize: 12)),
-        ],
+            const SizedBox(height: 6),
+            Text(
+              name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+            Text(
+              "$age yrs",
+              style: const TextStyle(color: Colors.grey, fontSize: 12),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -898,111 +891,19 @@ class RecommendationShimmerCard extends StatelessWidget {
 
 class _MatchCard extends StatelessWidget {
   final String name;
-  final int age;
+  final int view;
   final String job;
   final String location;
+  final String? imageUrl;
+  final Map<String, dynamic> ProfileView;
+
   const _MatchCard({
     required this.name,
-    required this.age,
+    required this.view,
     required this.job,
     required this.location,
-  });
-  @override
-  Widget build(BuildContext context) {
-    final pinkColor = const Color(0xFFA51C48);
-    return Container(
-      width: 145,
-      margin: const EdgeInsets.only(right: 13),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(11),
-        boxShadow: [const BoxShadow(color: Colors.black12, blurRadius: 7)],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            height: 78,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(11),
-              ),
-              color: Colors.grey[300],
-            ),
-            child: const Center(
-              child: Icon(Icons.person, color: Colors.white, size: 36),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 15,
-                  ),
-                ),
-                Text(
-                  '$age yrs',
-                  style: const TextStyle(fontSize: 13, color: Colors.black54),
-                ),
-                Text(
-                  job,
-                  style: const TextStyle(fontSize: 13, color: Colors.black54),
-                ),
-                Text(
-                  location,
-                  style: const TextStyle(fontSize: 13, color: Colors.black45),
-                ),
-                const SizedBox(height: 8),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {},
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: pinkColor,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(7),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      elevation: 0,
-                    ),
-                    child: const Text(
-                      'Connect Now',
-                      style: TextStyle(fontSize: 13, color: Colors.white),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _InterestCard extends StatelessWidget {
-  final String name;
-  final int age;
-  final String profileImg;
-  final String time;
-  final String city;
-  final List<String> tags;
-
-  const _InterestCard({
-    required this.name,
-    required this.age,
-    required this.time,
-    required this.city,
-    required this.tags,
-    required this.profileImg,
+    this.imageUrl,
+    required this.ProfileView,
   });
 
   @override
@@ -1010,9 +911,252 @@ class _InterestCard extends StatelessWidget {
     final pinkColor = const Color(0xFFA51C48);
 
     return InkWell(
+      borderRadius: BorderRadius.circular(8), // ripple matches card shape
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => MatchesDetailsScreen(match: ProfileView),
+          ),
+        );
+      },
+      child: Container(
+        width: 160,
+        margin: const EdgeInsets.only(right: 10, bottom: 1),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey.shade200, width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black12.withOpacity(0.05),
+              blurRadius: 6,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Profile Image Section
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(12),
+              ),
+              child:
+                  imageUrl != null && imageUrl!.isNotEmpty
+                      ? Image.network(
+                        "https://pheonixconstructions.com/assets/profile_image/$imageUrl",
+                        height: 100,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            height: 100,
+                            width: double.infinity,
+                            color: Colors.grey[300],
+                            child: const Icon(
+                              Icons.person,
+                              color: Colors.white,
+                              size: 40,
+                            ),
+                          );
+                        },
+                      )
+                      : Container(
+                        height: 100,
+                        width: double.infinity,
+                        color: Colors.grey[300],
+                        child: const Icon(
+                          Icons.person,
+                          color: Colors.white,
+                          size: 40,
+                        ),
+                      ),
+            ),
+
+            // Profile Info Section
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                    ),
+
+                    const SizedBox(height: 1),
+                    Row(
+                      children: [
+                        // Job
+                        Expanded(
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.work,
+                                size: 14,
+                                color: Colors.brown,
+                              ),
+                              const SizedBox(width: 3),
+                              Expanded(
+                                child: Text(
+                                  job,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.black54,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        // Location
+                        Expanded(
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.location_on,
+                                size: 14,
+                                color: Colors.redAccent,
+                              ),
+                              const SizedBox(width: 3),
+                              Expanded(
+                                child: Text(
+                                  location,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.black54,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 1),
+                    Center(
+                      child: Text(
+                        'Viewed $view times',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.black54,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _InterestCard extends StatefulWidget {
+  final String profileId; // 🔹 Add profileId to identify profiles
+  final String name;
+  final int age;
+  final String profileImg;
+  final String time;
+  final String city;
+  final List<String> tags;
+  final String senderId; // 🔹 add senderId
+
+  const _InterestCard({
+    required this.profileId,
+    required this.name,
+    required this.age,
+    required this.time,
+    required this.city,
+    required this.tags,
+    required this.profileImg,
+    required this.senderId,
+    Key? key,
+  }) : super(key: key);
+
+  @override
+  State<_InterestCard> createState() => _InterestCardState();
+}
+
+class _InterestCardState extends State<_InterestCard> {
+  // Static sets so all cards share the same state across screens
+  static Set<String> _acceptedProfiles = {};
+  static Set<String> _declinedProfiles = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAcceptedDeclined();
+  }
+
+  Future<void> _loadAcceptedDeclined() async {
+    final prefs = await SharedPreferences.getInstance();
+    final accepted = prefs.getStringList('accepted_profiles') ?? [];
+    final declined = prefs.getStringList('declined_profiles') ?? [];
+
+    setState(() {
+      _acceptedProfiles = accepted.toSet();
+      _declinedProfiles = declined.toSet();
+    });
+  }
+
+  Future<void> _saveAcceptedDeclined() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList('accepted_profiles', _acceptedProfiles.toList());
+    await prefs.setStringList('declined_profiles', _declinedProfiles.toList());
+  }
+
+  void _acceptProfile() {
+    setState(() {
+      _acceptedProfiles.add(widget.profileId);
+      _declinedProfiles.remove(widget.profileId); // optional
+    });
+    _saveAcceptedDeclined();
+  }
+
+  void _declineProfile() {
+    setState(() {
+      _declinedProfiles.add(widget.profileId);
+      _acceptedProfiles.remove(widget.profileId); // optional
+    });
+    _saveAcceptedDeclined();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final pinkColor = const Color(0xFFA51C48);
+
+    // If declined → don't render at all
+    if (_declinedProfiles.contains(widget.profileId))
+      return const SizedBox.shrink();
+    final alreadyAccepted = _acceptedProfiles.contains(widget.profileId);
+
+    return InkWell(
       borderRadius: BorderRadius.circular(10),
       onTap: () {
-        // 👇 Navigate to InterestsReceivedScreen when card is tapped
+        // Navigate to interests received details (if needed)
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -1032,9 +1176,9 @@ class _InterestCard extends StatelessWidget {
             CircleAvatar(
               radius: 24,
               backgroundImage:
-                  profileImg.isNotEmpty
+                  widget.profileImg.isNotEmpty
                       ? NetworkImage(
-                        "https://pheonixconstructions.com/assets/profile_image/$profileImg",
+                        "https://pheonixconstructions.com/assets/profile_image/${widget.profileImg}",
                       )
                       : const AssetImage("assets/user.png") as ImageProvider,
               onBackgroundImageError: (_, __) {},
@@ -1048,14 +1192,14 @@ class _InterestCard extends StatelessWidget {
                   Row(
                     children: [
                       Text(
-                        "$name, $age",
+                        "${widget.name}, ${widget.age}",
                         style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
                       const SizedBox(width: 6),
                       const Icon(Icons.verified, color: Colors.green, size: 14),
                       const Spacer(),
                       Text(
-                        time,
+                        widget.time,
                         style: const TextStyle(
                           fontSize: 12,
                           color: Colors.black54,
@@ -1064,15 +1208,15 @@ class _InterestCard extends StatelessWidget {
                     ],
                   ),
                   Text(
-                    city,
+                    widget.city,
                     style: const TextStyle(fontSize: 13, color: Colors.black54),
                   ),
                   const SizedBox(height: 4),
 
-                  // tags
+                  // Tags
                   Row(
                     children:
-                        tags
+                        widget.tags
                             .map(
                               (t) => Container(
                                 margin: const EdgeInsets.only(right: 6),
@@ -1098,55 +1242,184 @@ class _InterestCard extends StatelessWidget {
 
                   const SizedBox(height: 6),
 
-                  // action buttons
+                  // 🔹 Show Accept/Decline OR Chat button
                   Row(
                     children: [
-                      OutlinedButton(
-                        onPressed: () {
-                          // 👇 keep decline separate
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text("Declined")),
-                          );
-                        },
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 18,
-                            vertical: 6,
+                      if (!alreadyAccepted) ...[
+                        OutlinedButton(
+                          onPressed: _declineProfile,
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 18,
+                              vertical: 6,
+                            ),
+                            side: BorderSide(color: Colors.grey.shade300),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
                           ),
-                          side: BorderSide(color: Colors.grey.shade300),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(6),
+                          child: const Text(
+                            "Decline",
+                            style: TextStyle(color: Colors.black54),
                           ),
                         ),
-                        child: const Text(
-                          "Decline",
-                          style: TextStyle(color: Colors.black54),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      ElevatedButton(
-                        onPressed: () {
-                          // 👇 keep accept separate
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text("Accepted")),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: pinkColor,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 22,
-                            vertical: 6,
+                        const SizedBox(width: 10),
+                        ElevatedButton(
+                          onPressed: _acceptProfile,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: pinkColor,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 22,
+                              vertical: 6,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            elevation: 0,
                           ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(6),
+                          child: const Text(
+                            "Accept",
+                            style: TextStyle(color: Colors.white),
                           ),
-                          elevation: 0,
                         ),
-                        child: const Text(
-                          "Accept",
-                          style: TextStyle(color: Colors.white),
+                      ] else ...[
+                        ElevatedButton.icon(
+                          onPressed: () async {
+                            showDialog(
+                              context: context,
+                              barrierDismissible: false,
+                              builder:
+                                  (_) => Dialog(
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    elevation: 10,
+                                    backgroundColor: Colors.white,
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(20.0),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const CircularProgressIndicator(
+                                            color: Color(
+                                              0xFFA51C48,
+                                            ), // pink color
+                                          ),
+                                          const SizedBox(width: 20),
+                                          const Text(
+                                            "Checking subscription...",
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                            );
+
+                            try {
+                              final result =
+                                  await ApiService.getSubscriptionStatus(
+                                    int.parse(widget.senderId ?? '0'),
+                                  );
+
+                              Navigator.pop(context); // remove loading dialog
+
+                              if (result['status'] == 'success') {
+                                final isSubscribed =
+                                    result['subscribed'] == true ||
+                                    result['subscribed'] == 1 ||
+                                    result['subscribed'] == 'true';
+
+                                if (isSubscribed) {
+                                  // Navigate to MessageScreen
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder:
+                                          (context) => MessageScreen(
+                                            senderId: widget.senderId ?? '',
+                                            receiverId: widget.profileId,
+                                            receiverName: widget.name,
+                                          ),
+                                    ),
+                                  );
+                                } else {
+                                  // Not subscribed → show upgrade alert
+                                  showDialog(
+                                    context: context,
+                                    builder:
+                                        (context) => AlertDialog(
+                                          title: const Text('Upgrade Required'),
+                                          content: const Text(
+                                            'You need a premium subscription to chat.',
+                                          ),
+                                          actions: [
+                                            TextButton(
+                                              onPressed:
+                                                  () => Navigator.pop(context),
+                                              child: const Text('Cancel'),
+                                            ),
+                                            TextButton(
+                                              onPressed: () {
+                                                Navigator.pop(context);
+                                                Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder:
+                                                        (_) =>
+                                                            const SubscriptionScreen(),
+                                                  ),
+                                                );
+                                              },
+                                              child: const Text('Upgrade'),
+                                            ),
+                                          ],
+                                        ),
+                                  );
+                                }
+                              } else {
+                                // API returned error
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      result['message'] ??
+                                          'Failed to check subscription',
+                                    ),
+                                  ),
+                                );
+                              }
+                            } catch (e) {
+                              Navigator.pop(context); // remove loading dialog
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Error: $e')),
+                              );
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: pinkColor,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 22,
+                              vertical: 6,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            elevation: 0,
+                          ),
+                          icon: const Icon(
+                            Icons.chat,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                          label: const Text(
+                            "Chat",
+                            style: TextStyle(color: Colors.white),
+                          ),
                         ),
-                      ),
+                      ],
                     ],
                   ),
                 ],

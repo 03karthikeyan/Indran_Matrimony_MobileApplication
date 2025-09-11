@@ -41,6 +41,7 @@ dependencies:
   shimmer: ^3.0.0
   dropdown_button2: ^2.3.9
   animated_custom_dropdown: ^3.1.1
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:

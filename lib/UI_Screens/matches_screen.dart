@@ -53,35 +53,51 @@ class _MatchesScreenState extends State<MatchesScreen> {
               toIncome: currentFilters['to_income'],
             );
 
-    print('Full API Result: $result');
-
     if (result['success'] && mounted) {
       final data = result['data'];
+      final matchesList = List<Map<String, dynamic>>.from(
+        data['matches'] ?? [],
+      );
+      totalMatches = data['total_matches'] ?? 0;
 
-      if (data is Map) {
-        // Extract matches list
-        final matchesList = data['matches'] ?? [];
+      // Add match percentage for each user
+      final updatedMatches = await Future.wait(
+        matchesList.map<Future<Map<String, dynamic>>>((match) async {
+          final matchPercent = await MatchStorage.getMatchPercentage(
+            match['user_id'],
+          );
+          match['matchPercent'] = matchPercent;
+          return match;
+        }).toList(),
+      ); // ✅ convert to List
 
-        // Extract total matches count
-        totalMatches = data['total_matches'] ?? 0;
-
-        setState(() {
-          matches = List<Map<String, dynamic>>.from(matchesList);
-          isLoading = false;
-        });
-
-        print('Total Matches: $totalMatches');
-        print('Matches count: ${matches.length}');
-      } else {
-        setState(() {
-          matches = [];
-          totalMatches = 0;
-          isLoading = false;
-        });
-      }
+      setState(() {
+        matches = updatedMatches;
+        isLoading = false;
+      });
     } else if (mounted) {
-      print('API failed: ${result['error']}');
       setState(() => isLoading = false);
+    }
+  }
+
+  Future<void> sendInterest(int receiverId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final userIdString =
+        prefs.getString('user_id') ?? '1'; // always read as String
+    final senderId = int.tryParse(userIdString) ?? 1; // convert to int
+
+    final response = await ApiService.sendInterest(senderId, receiverId);
+
+    if (response['success']) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Interest sent successfully!')));
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(response['message'] ?? 'Failed to send interest'),
+        ),
+      );
     }
   }
 
@@ -91,49 +107,60 @@ class _MatchesScreenState extends State<MatchesScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F7F7),
+      appBar: AppBar(
+        backgroundColor: pink,
+        automaticallyImplyLeading: false, // hides the back button
+        iconTheme: const IconThemeData(color: Colors.white),
+        centerTitle: true, // ✅ centers the title
+        title: const Text(
+          "All matches",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+      ),
+
       body: Column(
         children: [
           // AppBar substitute
-          Container(
-            padding: const EdgeInsets.only(
-              top: 44,
-              left: 20,
-              right: 10,
-              bottom: 0,
-            ),
-            decoration: BoxDecoration(
-              color: pink,
-              borderRadius: const BorderRadius.vertical(
-                bottom: Radius.circular(22),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Tabs and more icon
-                Row(
-                  children: [
-                    Expanded(
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: [
-                            _TopTab(title: "All matches", selected: true),
-                            _TopTab(title: "Newly joined"),
-                            _TopTab(title: "Nearby matches"),
-                          ],
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.more_vert, color: Colors.white),
-                      onPressed: () {},
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
+          // Container(
+          //   padding: const EdgeInsets.only(
+          //     top: 44,
+          //     left: 20,
+          //     right: 10,
+          //     bottom: 0,
+          //   ),
+          //   decoration: BoxDecoration(
+          //     color: pink,
+          //     borderRadius: const BorderRadius.vertical(
+          //       bottom: Radius.circular(22),
+          //     ),
+          //   ),
+          //   child: Column(
+          //     crossAxisAlignment: CrossAxisAlignment.start,
+          //     children: [
+          //       // Tabs and more icon
+          //       Row(
+          //         children: [
+          //           Expanded(
+          //             child: SingleChildScrollView(
+          //               scrollDirection: Axis.horizontal,
+          //               child: Row(
+          //                 children: [
+          //                   _TopTab(title: "All matches", selected: true),
+          //                   // _TopTab(title: "Newly joined"),
+          //                   // _TopTab(title: "Nearby matches"),
+          //                 ],
+          //               ),
+          //             ),
+          //           ),
+          //           // IconButton(
+          //           //   icon: const Icon(Icons.more_vert, color: Colors.white),
+          //           //   onPressed: () {},
+          //           // ),
+          //         ],
+          //       ),
+          //     ],
+          //   ),
+          // ),
           // Matches filter and filter button row
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
@@ -197,7 +224,6 @@ class _MatchesScreenState extends State<MatchesScreen> {
                           child: _MatchCard(
                             image: baseUrl + match['profile_img'],
                             name: match['name'] ?? 'Unknown',
-                            code: match['user_id']?.toString() ?? '',
                             age: '${match['age'] ?? 0} years',
                             height: match['height'] ?? '',
                             caste: match['caste'] ?? '',
@@ -206,8 +232,9 @@ class _MatchesScreenState extends State<MatchesScreen> {
                             job: match['occupation'] ?? '',
                             membership: true,
                             idVerified: true,
-                            lastSeen: '2m ago',
-                            matchPercent: 95,
+                            matchPercent: match['matchPercent'] ?? 60,
+                            interestStatus:
+                                match['interest_status'], // 'pending'/'accepted'/null
                             onTap: () {
                               Navigator.of(context).push(
                                 MaterialPageRoute(
@@ -215,6 +242,13 @@ class _MatchesScreenState extends State<MatchesScreen> {
                                       (_) => MatchesDetailsScreen(match: match),
                                 ),
                               );
+                            },
+                            onSendInterest: () async {
+                              await sendInterest(match['user_id']);
+                              setState(() {
+                                match['interest_status'] =
+                                    'pending'; // mark as sent
+                              });
                             },
                           ),
                         );
@@ -275,7 +309,6 @@ class _TopTab extends StatelessWidget {
 class _MatchCard extends StatelessWidget {
   final String image;
   final String name;
-  final String code;
   final String age;
   final String height;
   final String caste;
@@ -284,14 +317,14 @@ class _MatchCard extends StatelessWidget {
   final String job;
   final bool idVerified;
   final bool membership;
-  final String lastSeen;
   final int matchPercent;
+  final String? interestStatus; // 'pending', 'accepted', 'declined' or null
   final VoidCallback onTap;
+  final VoidCallback? onSendInterest;
 
   const _MatchCard({
     required this.image,
     required this.name,
-    required this.code,
     required this.age,
     required this.height,
     required this.caste,
@@ -300,18 +333,20 @@ class _MatchCard extends StatelessWidget {
     required this.job,
     required this.idVerified,
     required this.membership,
-    required this.lastSeen,
     required this.matchPercent,
+    this.interestStatus,
     required this.onTap,
+    this.onSendInterest,
   });
 
   @override
   Widget build(BuildContext context) {
     final pink = const Color(0xFFA51C48);
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 13),
+        margin: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(14),
@@ -323,38 +358,24 @@ class _MatchCard extends StatelessWidget {
             ),
           ],
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(0),
-          child: Column(
-            children: [
-              // Image
-              ClipRRect(
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(14),
-                  topRight: Radius.circular(14),
-                ),
-                child: Stack(
-                  alignment: Alignment.topRight,
-                  children: [
-                    image.startsWith('http')
-                        ? Image.network(
-                          image,
-                          width: double.infinity,
-                          height: 180,
-                          fit: BoxFit.cover,
-                          errorBuilder:
-                              (context, error, stackTrace) => Container(
-                                width: double.infinity,
-                                height: 180,
-                                color: Colors.grey[300],
-                                child: Icon(
-                                  Icons.person,
-                                  size: 50,
-                                  color: Colors.white,
-                                ),
-                              ),
-                        )
-                        : Container(
+        child: Column(
+          children: [
+            // Image
+            ClipRRect(
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(14),
+                topRight: Radius.circular(14),
+              ),
+              child: Stack(
+                alignment: Alignment.topRight,
+                children: [
+                  Image.network(
+                    image,
+                    width: double.infinity,
+                    height: 180,
+                    fit: BoxFit.cover,
+                    errorBuilder:
+                        (context, error, stackTrace) => Container(
                           width: double.infinity,
                           height: 180,
                           color: Colors.grey[300],
@@ -364,276 +385,209 @@ class _MatchCard extends StatelessWidget {
                             color: Colors.white,
                           ),
                         ),
-                    Padding(
-                      padding: const EdgeInsets.only(top: 13, right: 13),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black12,
-                              blurRadius: 6,
-                              offset: Offset(0, 1),
-                            ),
-                          ],
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 13, right: 13),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black12,
+                            blurRadius: 6,
+                            offset: Offset(0, 1),
+                          ),
+                        ],
+                      ),
+                      child: Icon(Icons.favorite_border, color: pink, size: 26),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Verified and Membership row
+                  Row(
+                    children: [
+                      if (idVerified)
+                        _StatusTag(
+                          label: "ID Verified",
+                          icon: Icons.verified,
+                          color: Color(0xFF57BB7A),
                         ),
-                        child: Icon(
-                          Icons.favorite_border,
-                          color: pink,
-                          size: 26,
+                      if (membership)
+                        _StatusTag(
+                          label: "Membership",
+                          icon: Icons.workspace_premium,
+                          color: Color(0xFF1D7AF5),
+                        ),
+                      Spacer(),
+                      Text(
+                        "$matchPercent% Match",
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF16C93B),
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    name,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
                     ),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 12,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Verified and Membership row
-                    Row(
-                      children: [
-                        if (idVerified)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 9,
-                              vertical: 3,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFE7F7F0),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              children: const [
-                                Icon(
-                                  Icons.verified,
-                                  color: Color(0xFF57BB7A),
-                                  size: 15,
-                                ),
-                                SizedBox(width: 4),
-                                Text(
-                                  "ID Verified",
-                                  style: TextStyle(
-                                    fontSize: 12.5,
-                                    color: Color(0xFF57BB7A),
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        if (membership)
-                          Container(
-                            margin: const EdgeInsets.only(left: 7),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 9,
-                              vertical: 3,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFEAF6FF),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              children: const [
-                                Icon(
-                                  Icons.workspace_premium,
-                                  color: Color(0xFF1D7AF5),
-                                  size: 15,
-                                ),
-                                SizedBox(width: 4),
-                                Text(
-                                  "Membership",
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Color(0xFF1D7AF5),
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        const Spacer(),
-                        Text(
-                          "Last seen $lastSeen",
-                          style: const TextStyle(
-                            fontSize: 12.5,
-                            color: Colors.black54,
-                          ),
-                        ),
-                      ],
+                  ),
+                  const SizedBox(height: 7),
+                  Text(
+                    "$age • $location • $caste ",
+                    style: const TextStyle(
+                      fontSize: 14.5,
+                      color: Colors.black87,
+                      fontWeight: FontWeight.w500,
                     ),
-                    const SizedBox(height: 10),
-                    // Name, code, match %
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            name,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18,
-                            ),
-                          ),
+                  ),
+                  const SizedBox(height: 7),
+                  Row(
+                    children: [
+                      Icon(Icons.school, size: 15, color: pink),
+                      const SizedBox(width: 4),
+                      Text(
+                        degree,
+                        style: const TextStyle(
+                          fontSize: 13.5,
+                          color: Colors.black87,
                         ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 9,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFEBF7F0),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            "$matchPercent% Match",
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: Color(0xFF16C93B),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    Text(
-                      code,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.black54,
                       ),
-                    ),
-                    const SizedBox(height: 7),
-                    // Age line
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            "$age • $height • $caste • $location",
-                            style: const TextStyle(
-                              fontSize: 14.5,
-                              color: Colors.black87,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
+                      const SizedBox(width: 13),
+                      Icon(Icons.work, size: 15, color: pink),
+                      const SizedBox(width: 4),
+                      Text(
+                        job,
+                        style: const TextStyle(
+                          fontSize: 13.5,
+                          color: Colors.black87,
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 7),
-                    // Degree / Job
-                    Row(
-                      children: [
-                        Icon(Icons.school, size: 15, color: pink),
-                        const SizedBox(width: 4),
-                        Text(
-                          degree,
-                          style: const TextStyle(
-                            fontSize: 13.5,
-                            color: Colors.black87,
-                          ),
-                        ),
-                        const SizedBox(width: 13),
-                        Icon(Icons.work, size: 15, color: pink),
-                        const SizedBox(width: 4),
-                        Text(
-                          job,
-                          style: const TextStyle(
-                            fontSize: 13.5,
-                            color: Colors.black87,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 13),
-                    // Buttons
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            style: OutlinedButton.styleFrom(
-                              minimumSize: const Size(0, 38),
-                              padding: EdgeInsets.zero,
-                              side: BorderSide(color: Colors.grey.shade400),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                            onPressed: () {},
-                            child: const Text(
-                              "Don't Show",
-                              style: TextStyle(
-                                color: Colors.black87,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              minimumSize: const Size(0, 38),
-                              backgroundColor: pink,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                            onPressed: () async {
-                              final prefs =
-                                  await SharedPreferences.getInstance();
-                              final senderId =
-                                  int.tryParse(
-                                    prefs.getString('user_id') ?? '1',
-                                  ) ??
-                                  1;
-                              final receiverId = int.tryParse(code) ?? 0;
-
-                              final result = await ApiService.sendInterest(
-                                senderId,
-                                receiverId,
-                              );
-
-                              if (result['success']) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      result['message'] ?? "Interest sent",
-                                    ),
-                                  ),
-                                );
-                              } else {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      "Failed: ${result['message']}",
-                                    ),
-                                  ),
-                                );
-                              }
-                            },
-                            child: const Text(
-                              "Send Interest",
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 13),
+                  // Only Send Interest button or status
+                  _buildInterestButton(context),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
+  }
+
+  Widget _buildInterestButton(BuildContext context) {
+    if (interestStatus == null) {
+      // Not sent yet → show button
+      return SizedBox(
+        width: double.infinity,
+        child: ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFFA51C48),
+          ),
+          onPressed: onSendInterest,
+          child: const Text(
+            "Send Interest",
+            style: TextStyle(color: Colors.white),
+          ),
+        ),
+      );
+    } else {
+      // Already sent → show status
+      Color statusColor;
+      String text = interestStatus!.toUpperCase();
+
+      if (interestStatus == "accepted")
+        statusColor = Colors.green;
+      else if (interestStatus == "declined")
+        statusColor = Colors.red;
+      else
+        statusColor = Colors.orange; // pending
+
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: statusColor.withOpacity(0.2),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Center(
+          child: Text(
+            text,
+            style: TextStyle(color: statusColor, fontWeight: FontWeight.bold),
+          ),
+        ),
+      );
+    }
+  }
+}
+
+class _StatusTag extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final Color color;
+  const _StatusTag({
+    required this.label,
+    required this.icon,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(right: 7),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 15),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 12.5,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class MatchStorage {
+  static Future<int> getMatchPercentage(int userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = 'match_$userId';
+    if (prefs.containsKey(key)) return prefs.getInt(key)!;
+
+    int percentage = _calculateMatchPercentage(userId);
+    await prefs.setInt(key, percentage);
+    return percentage;
+  }
+
+  static int _calculateMatchPercentage(int userId) {
+    final seed = userId;
+    final random = (seed * 9301 + 49297) % 233280;
+    final normalized = random / 233280;
+    return (60 + (normalized * 35)).floor(); // 60-95%
   }
 }

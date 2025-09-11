@@ -4,7 +4,7 @@ import 'package:matrimony/services/api_service.dart';
 class MessageScreen extends StatefulWidget {
   final String senderId; // Current logged-in user
   final String receiverId; // Chat partner
-  final String receiverName; // Optional: display name in AppBar
+  final String receiverName; // Display name in AppBar
 
   const MessageScreen({
     Key? key,
@@ -19,13 +19,21 @@ class MessageScreen extends StatefulWidget {
 
 class _MessageScreenState extends State<MessageScreen> {
   final TextEditingController _messageController = TextEditingController();
-  List<Map<String, dynamic>> messages = []; // Dynamic message list
+  List<Map<String, dynamic>> messages = [];
   bool isSending = false;
 
   @override
   void initState() {
     super.initState();
     _loadMessages();
+
+    // 🔄 Auto refresh every 5 seconds to update ticks and new messages
+    Future.doWhile(() async {
+      await Future.delayed(const Duration(seconds: 5));
+      if (!mounted) return false;
+      await _loadMessages();
+      return true;
+    });
   }
 
   Future<void> _loadMessages() async {
@@ -66,14 +74,9 @@ class _MessageScreenState extends State<MessageScreen> {
     );
 
     if (result['success']) {
-      setState(() {
-        messages.add({
-          'sender_id': widget.senderId,
-          'message': msg,
-          'time': DateTime.now().toString(),
-        });
-        _messageController.clear();
-      });
+      _messageController.clear();
+      // ✅ Reload full list so ticks update properly
+      await _loadMessages();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(result['message'] ?? "Failed to send")),
@@ -91,9 +94,7 @@ class _MessageScreenState extends State<MessageScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
-        iconTheme: const IconThemeData(
-          color: Colors.white, // Set your desired color here
-        ),
+        iconTheme: const IconThemeData(color: Colors.white),
         title: Text(
           widget.receiverName,
           style: const TextStyle(
@@ -114,35 +115,102 @@ class _MessageScreenState extends State<MessageScreen> {
                       padding: const EdgeInsets.all(8),
                       itemCount: messages.length,
                       itemBuilder: (context, index) {
-                        final msg =
-                            messages[messages.length -
-                                1 -
-                                index]; // reverse list
-                        bool isMe =
-                            msg['sender_id'].toString() == widget.senderId;
+                        final msg = messages[messages.length - 1 - index];
 
-                        return Align(
-                          alignment:
-                              isMe
-                                  ? Alignment.centerRight
-                                  : Alignment.centerLeft,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 8,
+                        /// ✅ Null safe handling
+                        final String text = msg['message']?.toString() ?? "";
+                        final String senderId =
+                            msg['sender_id']?.toString() ?? "";
+                        final String time = msg['time']?.toString() ?? "";
+                        final String seen = msg['is_seen']?.toString() ?? "0";
+
+                        bool isMe = senderId == widget.senderId;
+
+                        // ✅ Date header logic
+                        String msgDate = _formatDate(time);
+                        bool showHeader = true;
+                        if (index > 0) {
+                          final prevMsg =
+                              messages[messages.length - 1 - (index - 1)];
+                          String prevDate = _formatDate(
+                            prevMsg['time']?.toString() ?? "",
+                          );
+                          if (prevDate == msgDate) {
+                            showHeader = false;
+                          }
+                        }
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            if (showHeader)
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 8,
+                                ),
+                                child: Text(
+                                  msgDate,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.black54,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+
+                            Align(
+                              alignment:
+                                  isMe
+                                      ? Alignment.centerRight
+                                      : Alignment.centerLeft,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                                margin: const EdgeInsets.symmetric(vertical: 4),
+                                decoration: BoxDecoration(
+                                  color:
+                                      isMe
+                                          ? Colors.pink[100]
+                                          : Colors.grey[300],
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Flexible(
+                                      child: Text(
+                                        text,
+                                        style: const TextStyle(fontSize: 14),
+                                      ),
+                                    ),
+
+                                    if (isMe) ...[
+                                      const SizedBox(width: 6),
+                                      Icon(
+                                        seen == "1"
+                                            ? Icons.done_all
+                                            : Icons.done,
+                                        size: 16,
+                                        color:
+                                            seen == "1"
+                                                ? Colors.blue
+                                                : Colors.grey,
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
                             ),
-                            margin: const EdgeInsets.symmetric(vertical: 4),
-                            decoration: BoxDecoration(
-                              color: isMe ? Colors.pink[100] : Colors.grey[300],
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(msg['message']),
-                          ),
+                          ],
                         );
                       },
                     ),
           ),
 
+          // Input box
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -161,12 +229,10 @@ class _MessageScreenState extends State<MessageScreen> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  isSending
-                      ? const CircularProgressIndicator()
-                      : IconButton(
-                        icon: const Icon(Icons.send, color: Colors.pink),
-                        onPressed: _sendMessage,
-                      ),
+                  IconButton(
+                    icon: const Icon(Icons.send, color: Colors.pink),
+                    onPressed: _sendMessage,
+                  ),
                 ],
               ),
             ),
@@ -174,5 +240,28 @@ class _MessageScreenState extends State<MessageScreen> {
         ],
       ),
     );
+  }
+}
+
+/// Format message date into Today / Yesterday / dd-MM-yyyy
+String _formatDate(String? dateTime) {
+  if (dateTime == null || dateTime.isEmpty) return "";
+  try {
+    final now = DateTime.now();
+    final msgDate = DateTime.parse(dateTime);
+
+    if (msgDate.year == now.year &&
+        msgDate.month == now.month &&
+        msgDate.day == now.day) {
+      return "Today";
+    } else if (msgDate.year == now.year &&
+        msgDate.month == now.month &&
+        msgDate.day == now.day - 1) {
+      return "Yesterday";
+    } else {
+      return "${msgDate.day}-${msgDate.month}-${msgDate.year}";
+    }
+  } catch (e) {
+    return dateTime;
   }
 }

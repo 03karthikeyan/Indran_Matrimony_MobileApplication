@@ -33,14 +33,28 @@ class ProfileView {
       city: json['city'],
       state: json['state'],
       occupation: json['occupation'],
-      image:
-          json['profile_img'] != null
-              ? "https://pheonixconstructions.com/assets/profile_image/${json['profile_img']}"
-              : "https://via.placeholder.com/150",
-      profileId: json['profile_id'] ?? '',
-      userId: json['user_id'].toString(),
+      image: json['profile_img'] ?? '',
+      profileId: json['profile_id']?.toString() ?? '',
+      userId: json['user_id']?.toString(),
       lastViewedAt: json['last_viewed_at'] ?? '',
       totalViews: int.tryParse(json['total_views'].toString()) ?? 0,
     );
+  }
+
+  /// 🔹 Add this to fix your error
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'gender': gender,
+      'city': city,
+      'state': state,
+      'occupation': occupation,
+      'profile_img': image,
+      'profile_id': profileId,
+      'user_id': userId,
+      'last_viewed_at': lastViewedAt,
+      'total_views': totalViews,
+    };
   }
 }
