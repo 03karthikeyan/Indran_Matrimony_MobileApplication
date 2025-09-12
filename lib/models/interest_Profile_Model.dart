@@ -29,26 +29,17 @@ class InterestedProfile {
   }) {
     print("📥 Parsing InterestedProfile: $json");
 
-    // Step 1: Identify sender and receiver IDs
-    String senderId =
-        json['profile_id']?.toString() ??
-        json['sender_id']?.toString() ??
-        json['from_user_id']?.toString() ??
-        "";
-    String receiverId = json['user_id']?.toString() ?? "";
+    // Logged-in user always
+    String userId = loggedInUserId;
 
-    // Step 2: Determine which is the logged-in user
-    String profileId = senderId; // other person
-    String userId = receiverId; // logged-in user
+    // Try to get other person's id safely
+    String profileId = json['user_id']?.toString() ?? "";
 
-    if (senderId == loggedInUserId) {
-      // sender is the logged-in user → swap
-      profileId = receiverId; // other person
-      userId = loggedInUserId; // logged-in user
+    if (profileId == loggedInUserId) {
+      // 👀 API gave same id as logged in user
+      // Try alternate field
+      profileId = json['profile_id']?.toString() ?? "";
     }
-
-    // Step 3: Fallbacks
-    if (profileId.isEmpty) profileId = loggedInUserId;
 
     return InterestedProfile(
       profileId: profileId,

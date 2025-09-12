@@ -1486,43 +1486,31 @@ class _InterestCardState extends State<_InterestCard> {
                   ),
                 ] else if (_status == "accepted") ...[
                   ElevatedButton.icon(
-                    onPressed: () {
-                      // ...inside _InterestCardState, before Navigator.push...
+                    onPressed: () async {
+                      final prefs = await SharedPreferences.getInstance();
+                      final loggedInUserId = prefs.getString('user_id') ?? "";
+
+                      String senderId = loggedInUserId; // ✅ always you
+                      String receiverId =
+                          widget.profileId; // ✅ always the other person
+
                       print(
-                        "Navigating to MessageScreen with senderId=${widget.userId}, receiverId=${widget.profileId}, name=${widget.name}",
+                        "Navigating to MessageScreen with senderId=$senderId, receiverId=$receiverId, name=${widget.name}",
                       );
-                      // ...inside _InterestCardState, before Navigator.push...
-                      if (widget.profileId.isEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text("Cannot chat: Profile ID missing"),
-                          ),
-                        );
-                        return;
-                      }
+
                       Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder:
                               (_) => MessageScreen(
-                                senderId: widget.userId,
-                                receiverId: widget.profileId,
+                                senderId: senderId,
+                                receiverId: receiverId,
                                 receiverName: widget.name,
                               ),
                         ),
                       );
                     },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: pinkColor,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 22,
-                        vertical: 6,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      elevation: 0,
-                    ),
+                    style: ElevatedButton.styleFrom(backgroundColor: pinkColor),
                     icon: const Icon(Icons.chat, color: Colors.white, size: 16),
                     label: const Text(
                       "Chat",

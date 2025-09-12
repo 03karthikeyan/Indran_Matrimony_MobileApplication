@@ -34,8 +34,17 @@ class _MainNavigationState extends State<MainNavigation> {
   Widget build(BuildContext context) {
     return WillPopScope(
       onWillPop: () async {
-        SystemNavigator.pop();
-        return false;
+        if (_currentIndex != 0) {
+          // ✅ If not on Home, go back to Home
+          setState(() {
+            _currentIndex = 0;
+          });
+          return false; // prevent closing app
+        } else {
+          // ✅ If already on Home, close the app
+          SystemNavigator.pop();
+          return true;
+        }
       },
       child: Scaffold(
         body: _screens[_currentIndex],

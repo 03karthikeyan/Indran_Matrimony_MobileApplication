@@ -100,10 +100,19 @@ class _MatchesDetailsScreenState extends State<MatchesDetailsScreen> {
 
   String formatContact(String contact, bool isPremium) {
     if (contact.isEmpty) return "--";
+
     if (isPremium) {
+      // show full number
       return "+91 $contact";
     } else {
-      return "+91 ${contact.substring(0, 2)}**** *****";
+      if (contact.length < 4) {
+        // safety: if number is too short
+        return "+91 ****";
+      }
+      String firstTwo = contact.substring(0, 2);
+      String lastTwo = contact.substring(contact.length - 2);
+      String masked = "*" * (contact.length - 4); // mask middle part
+      return "+91 $firstTwo$masked$lastTwo";
     }
   }
 
@@ -130,7 +139,7 @@ class _MatchesDetailsScreenState extends State<MatchesDetailsScreen> {
           borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
         ),
       ),
-     
+
       body: ListView(
         padding: const EdgeInsets.only(bottom: 16),
         children: [
@@ -469,13 +478,76 @@ class _MatchesDetailsScreenState extends State<MatchesDetailsScreen> {
                     ],
                   ),
                   const SizedBox(height: 5),
-                  Text(
-                    formatContact(
-                      widget.match['contact_no'] ?? '9876543210',
-                      isPremiumUser,
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
                     ),
-                    style: const TextStyle(fontWeight: FontWeight.w600),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color:
+                            isPremiumUser
+                                ? Colors.green.shade400
+                                : Colors.grey.shade400,
+                        width: 1,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black12,
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // 🇮🇳 Indian Flag
+                            Text(
+                              "🇮🇳",
+                              style: const TextStyle(
+                                fontSize: 20,
+                              ), // adjust size
+                            ),
+
+                            const SizedBox(width: 8),
+
+                            // Vertical Divider
+                            Container(
+                              width: 1,
+                              height: 20,
+                              color: Colors.grey.shade400,
+                            ),
+
+                            const SizedBox(width: 8),
+
+                            // Contact Number
+                            Text(
+                              formatContact(
+                                widget.match['contact_no'] ?? '9876543210',
+                                isPremiumUser,
+                              ),
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 15,
+                                color:
+                                    isPremiumUser
+                                        ? Colors.green.shade800
+                                        : Colors.black87,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
+
                   const SizedBox(height: 10),
 
                   // ✅ Show WhatsApp & Chat only if Premium
