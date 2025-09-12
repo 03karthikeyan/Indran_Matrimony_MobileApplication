@@ -4,6 +4,7 @@ import 'package:matrimony/UI_Screens/EditProfileScreen.dart';
 import 'dart:convert';
 import 'package:matrimony/models/user_data.dart';
 import 'package:matrimony/services/api_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class PersonalDetailsScreen extends StatefulWidget {
   final UserData user;
@@ -25,10 +26,21 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
   }
 
   Future<void> _toggleUserStatus() async {
-    if (widget.user.userId == null) {
+    int? userId = widget.user.userId;
+
+    // fallback to shared preferences if null
+    if (userId == null) {
+      final prefs = await SharedPreferences.getInstance();
+      final storedId = prefs.getString('user_id');
+      if (storedId != null && storedId.isNotEmpty) {
+        userId = int.tryParse(storedId);
+      }
+    }
+
+    if (userId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("Invalid user ID"),
+          content: Text("User ID not found"),
           backgroundColor: Colors.red,
         ),
       );
@@ -39,16 +51,16 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
 
     try {
       if (isActive) {
-        response = await ApiService.deactivateUser(widget.user.userId!);
+        response = await ApiService.deactivateUser(userId);
       } else {
-        response = await ApiService.activateUser(widget.user.userId!);
+        response = await ApiService.activateUser(userId);
       }
 
       if (response['success'] == true) {
         setState(() {
-          // update local and model
           isActive = !isActive;
           widget.user.isActive = isActive;
+          widget.user.userId = userId; // ✅ update in model too
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -59,7 +71,7 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                       ? "Profile activated successfully"
                       : "Profile deactivated successfully"),
             ),
-            backgroundColor: Colors.green,
+            backgroundColor: isActive ? Colors.green : Colors.red,
           ),
         );
       } else {
@@ -80,22 +92,27 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     final user = widget.user;
+    final pink = const Color(0xFFA51C48);
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
+        backgroundColor: pink,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
-        elevation: 0,
-        backgroundColor: Colors.pinkAccent,
-        title: const Text(
-          "Personal Details",
+        title: Text(
+          "Personal Informations",
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
+        centerTitle: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+        ),
       ),
+
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -156,8 +173,6 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                       
-
                         // const SizedBox(width: 12),
                         ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(

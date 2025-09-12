@@ -18,6 +18,9 @@ class _InterestsReceivedScreenState extends State<InterestsReceivedScreen> {
   List<Map<String, dynamic>> interests = [];
   bool isLoading = true;
   int? userId;
+  Set<int> loadingIds = {};
+  Map<int, bool> acceptingIds = {};
+  Map<int, bool> decliningIds = {};
 
   final pink = const Color(0xFFA51C48);
 
@@ -69,22 +72,39 @@ class _InterestsReceivedScreenState extends State<InterestsReceivedScreen> {
 
   void _handleAction(int index, String action) async {
     final interest = interests[index];
+    final interestId = interest['interest_id'];
+
+    // Mark only the correct button as loading
+    setState(() {
+      if (action == "accept") {
+        acceptingIds[interestId] = true;
+      } else {
+        decliningIds[interestId] = true;
+      }
+    });
+
     final result = await ApiService.respondInterest(
-      interest['interest_id'],
+      interestId,
       userId!,
       action,
     );
 
     if (!mounted) return;
 
+    setState(() {
+      acceptingIds[interestId] = false;
+      decliningIds[interestId] = false;
+
+      if (result['status'] == 'success') {
+        // 🔹 Update status immediately
+        interests[index]['status'] =
+            action == "accept" ? "accepted" : "declined";
+      }
+    });
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(result['message'] ?? "$action success")),
     );
-
-    // 🔹 Remove profile immediately after accept/decline
-    setState(() {
-      interests.removeAt(index);
-    });
   }
 
   @override
@@ -128,6 +148,10 @@ class _InterestsReceivedScreenState extends State<InterestsReceivedScreen> {
                     },
                     child: _InterestCard(
                       interest: interest,
+                      isAccepting:
+                          acceptingIds[interest['interest_id']] ?? false,
+                      isDeclining:
+                          decliningIds[interest['interest_id']] ?? false,
                       onAccept: () => _handleAction(index, "accept"),
                       onDecline: () => _handleAction(index, "decline"),
                     ),
@@ -214,16 +238,21 @@ class _InterestCard extends StatelessWidget {
   final Map<String, dynamic> interest;
   final VoidCallback onAccept;
   final VoidCallback onDecline;
+  final bool isAccepting;
+  final bool isDeclining;
 
   const _InterestCard({
     required this.interest,
     required this.onAccept,
     required this.onDecline,
+    required this.isAccepting,
+    required this.isDeclining,
   });
 
   @override
   Widget build(BuildContext context) {
     final pink = const Color(0xFFA51C48);
+    final status = interest['status'] ?? "pending"; // 🔹 check status
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -248,7 +277,7 @@ class _InterestCard extends StatelessWidget {
               width: double.infinity,
               fit: BoxFit.cover,
               errorBuilder:
-                  (context, error, stack) => Container(
+                  (_, __, ___) => Container(
                     height: 160,
                     color: Colors.grey[300],
                     child: const Icon(
@@ -259,12 +288,13 @@ class _InterestCard extends StatelessWidget {
                   ),
             ),
           ),
+
+          // Content
           Padding(
             padding: const EdgeInsets.all(14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Name + Age + City
                 Text(
                   "${interest['name']} (${interest['age']} yrs)",
                   style: const TextStyle(
@@ -283,44 +313,88 @@ class _InterestCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
 
-                // Accept / Decline Buttons
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: onAccept,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          minimumSize: const Size(0, 40),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                // 🔹 Status-based UI
+                if (status == "pending") ...[
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: isAccepting ? null : onAccept,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            minimumSize: const Size(0, 40),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
                           ),
+                          child:
+                              isAccepting
+                                  ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                  : const Text(
+                                    "Accept",
+                                    style: TextStyle(color: Colors.white),
+                                  ),
                         ),
-                        child: const Text(
-                          "Accept",
-                          style: TextStyle(color: Colors.white),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: isDeclining ? null : onDecline,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                            minimumSize: const Size(0, 40),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child:
+                              isDeclining
+                                  ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                  : const Text(
+                                    "Decline",
+                                    style: TextStyle(color: Colors.white),
+                                  ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ] else ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      color:
+                          status == "accepted"
+                              ? Colors.green.withOpacity(0.15)
+                              : Colors.red.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Center(
+                      child: Text(
+                        status.toUpperCase(),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color:
+                              status == "accepted" ? Colors.green : Colors.red,
                         ),
                       ),
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: onDecline,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
-                          minimumSize: const Size(0, 40),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        child: const Text(
-                          "Decline",
-                          style: TextStyle(color: Colors.white),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ],
             ),
           ),

@@ -95,7 +95,29 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     setState(() => isSaving = true);
 
-    // Construct URL or API payload (example uses GET query params, ideally should be POST)
+    // Print all the values to the terminal/logs
+    print("Saving Profile Data:");
+    print("User ID: ${widget.userId}");
+    print("Name: ${_nameController.text.trim()}");
+    print("Email: ${_emailController.text.trim()}");
+    print("Contact: ${_contactController.text.trim()}");
+    print("Age: ${_ageController.text.trim()}");
+    print("DOB: ${_dobController.text.trim()}");
+    print("City: ${_cityController.text.trim()}");
+    print("State: ${_stateController.text.trim()}");
+    print("Occupation: ${_occupationController.text.trim()}");
+    print("Annual Income: ${_incomeController.text.trim()}");
+    print("Education: ${_educationController.text.trim()}");
+    print("Work Location: ${_workLocationController.text.trim()}");
+    print("About: ${_aboutController.text.trim()}");
+    print("Gender: $_gender");
+    print("Religion: $_religion");
+    print("Caste: $_caste");
+    print("Sub-Caste: $_subCaste");
+    print("Dosham: $_dosham");
+    print("Inter Caste: $_interCaste");
+    print("Profile Image Path: ${_profileImage?.path}");
+
     final url = Uri.parse(
       "https://pheonixconstructions.com/Matrimony API/profile_update.php"
       "?user_id=${widget.userId}"
@@ -123,6 +145,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       final response = await http.get(url);
       setState(() => isSaving = false);
 
+      print("API Response: ${response.body}"); // print API response
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data["status"] == "success") {
@@ -142,6 +166,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       }
     } catch (e) {
       setState(() => isSaving = false);
+      print("Error saving profile: $e"); // print error
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text("Error: $e")));
@@ -153,18 +178,24 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final pinkColor = const Color(0xFFA51C48);
 
     return Scaffold(
+      backgroundColor: Colors.grey[100],
       appBar: AppBar(
+        backgroundColor: pinkColor,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
-        title: const Text(
+        title: Text(
           "Edit Profile",
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
-        backgroundColor: pinkColor,
+        centerTitle: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+        ),
       ),
+
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Form(
@@ -272,22 +303,34 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               _buildTextField("About Yourself", _aboutController, maxLines: 4),
 
               const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: isSaving ? null : _saveProfile,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: pinkColor,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+              SizedBox(
+                width: double.infinity, // makes the button full-width
+                child: ElevatedButton(
+                  onPressed: isSaving ? null : _saveProfile,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: pinkColor,
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 16,
+                    ), // slightly taller
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
+                  child:
+                      isSaving
+                          ? const SizedBox(
+                            height: 24,
+                            width: 24,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2.5,
+                            ),
+                          )
+                          : const Text(
+                            "Save Changes",
+                            style: TextStyle(fontSize: 16, color: Colors.white),
+                          ),
                 ),
-                child:
-                    isSaving
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text(
-                          "Save Changes",
-                          style: TextStyle(fontSize: 16, color: Colors.white),
-                        ),
               ),
             ],
           ),

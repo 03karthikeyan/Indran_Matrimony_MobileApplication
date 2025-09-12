@@ -86,22 +86,48 @@ class _MatchesScreenState extends State<MatchesScreen> {
 
   Future<void> sendInterest(int receiverId) async {
     final prefs = await SharedPreferences.getInstance();
-    final userIdString =
-        prefs.getString('user_id') ?? '1'; // always read as String
-    final senderId = int.tryParse(userIdString) ?? 1; // convert to int
+    final userIdString = prefs.getString('user_id') ?? '1';
+    final senderId = int.tryParse(userIdString) ?? 1;
 
     final response = await ApiService.sendInterest(senderId, receiverId);
 
-    if (response['success']) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Interest sent successfully!')));
-    } else {
+    if (!mounted) return;
+
+    if (response['success'] == true) {
+      // ✅ New interest sent
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(response['message'] ?? 'Failed to send interest'),
+          content: Text(response['message'] ?? "Interest sent successfully!"),
+          backgroundColor: Colors.green,
         ),
       );
+      setState(() {
+        // update UI to pending state
+        final match = matches.firstWhere(
+          (m) => m['user_id'] == receiverId,
+          orElse: () => {},
+        );
+        if (match.isNotEmpty) {
+          match['interest_status'] = response['status'] ?? "pending";
+        }
+      });
+    } else {
+      // ✅ Already sent or failed
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(response['message'] ?? "Failed to send interest"),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      setState(() {
+        final match = matches.firstWhere(
+          (m) => m['user_id'] == receiverId,
+          orElse: () => {},
+        );
+        if (match.isNotEmpty) {
+          match['interest_status'] = response['status'] ?? "pending";
+        }
+      });
     }
   }
 
@@ -518,44 +544,58 @@ class _MatchCard extends StatelessWidget {
   }
 
   Widget _buildInterestButton(BuildContext context) {
+    final pink = const Color(0xFFA51C48);
+
     if (interestStatus == null) {
-      // Not sent yet → show button
+      // ✅ Not sent yet → show button
       return SizedBox(
         width: double.infinity,
         child: ElevatedButton(
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFA51C48),
+            backgroundColor: pink,
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
           onPressed: onSendInterest,
           child: const Text(
             "Send Interest",
-            style: TextStyle(color: Colors.white),
+            style: TextStyle(color: Colors.white, fontSize: 15),
           ),
         ),
       );
     } else {
-      // Already sent → show status
+      // ✅ Already sent → show info box instead of Pending button
       Color statusColor;
-      String text = interestStatus!.toUpperCase();
+      String text;
 
-      if (interestStatus == "accepted")
+      if (interestStatus == "accepted") {
         statusColor = Colors.green;
-      else if (interestStatus == "declined")
+        text = "INTEREST ACCEPTED";
+      } else if (interestStatus == "declined") {
         statusColor = Colors.red;
-      else
-        statusColor = Colors.orange; // pending
+        text = "INTEREST DECLINED";
+      } else {
+        statusColor = Colors.orange;
+        text = "INTEREST ALREADY SENT"; // 👈 instead of PENDING
+      }
 
       return Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 10),
+        padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: statusColor.withOpacity(0.2),
-          borderRadius: BorderRadius.circular(8),
+          color: statusColor.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(10),
         ),
         child: Center(
           child: Text(
             text,
-            style: TextStyle(color: statusColor, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              color: statusColor,
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
           ),
         ),
       );

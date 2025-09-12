@@ -88,8 +88,10 @@ class _MessageScreenState extends State<MessageScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final pink = const Color(0xFFA51C48);
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: pink,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
@@ -97,13 +99,14 @@ class _MessageScreenState extends State<MessageScreen> {
         iconTheme: const IconThemeData(color: Colors.white),
         title: Text(
           widget.receiverName,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
-        backgroundColor: Colors.pink,
+        centerTitle: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+        ),
       ),
+
       body: Column(
         children: [
           Expanded(
@@ -121,8 +124,8 @@ class _MessageScreenState extends State<MessageScreen> {
                         final String text = msg['message']?.toString() ?? "";
                         final String senderId =
                             msg['sender_id']?.toString() ?? "";
-                        final String time = msg['time']?.toString() ?? "";
-                        final String seen = msg['is_seen']?.toString() ?? "0";
+                        final String time = msg['created']?.toString() ?? "";
+                        final String seen = msg['is_read']?.toString() ?? "0";
 
                         bool isMe = senderId == widget.senderId;
 

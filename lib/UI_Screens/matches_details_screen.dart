@@ -113,20 +113,24 @@ class _MatchesDetailsScreenState extends State<MatchesDetailsScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F7F7),
+
       appBar: AppBar(
         backgroundColor: pink,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
-        iconTheme: const IconThemeData(
-          color: Colors.white, // Set your desired color here
-        ),
+        iconTheme: const IconThemeData(color: Colors.white),
         title: Text(
           "${widget.match['name']} ",
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
+        centerTitle: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+        ),
       ),
+     
       body: ListView(
         padding: const EdgeInsets.only(bottom: 16),
         children: [

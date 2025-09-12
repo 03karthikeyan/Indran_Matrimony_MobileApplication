@@ -174,7 +174,14 @@ class _HomeScreenState extends State<HomeScreen> {
       final data = json.decode(response.body);
       if (data['status'] == 'success') {
         final List profiles = data['interested_profiles'];
-        return profiles.map((e) => InterestedProfile.fromJson(e)).toList();
+        return profiles
+            .map(
+              (e) => InterestedProfile.fromJson(
+                e,
+                loggedInUserId: widget.userId.toString(),
+              ),
+            )
+            .toList();
       } else {
         return [];
       }
@@ -830,15 +837,17 @@ class _HomeScreenState extends State<HomeScreen> {
                     children:
                         profiles.map((profile) {
                           return _InterestCard(
-                            profileId:
-                                profile.interestId.toString(), // 👈 Add this
+                            profileId: profile.profileId, // ✅ sender user id
+                            userId:
+                                widget.userId.toString(), // ✅ logged-in user id
+                            interestId: profile.interestId, // ✅ interest row id
+                            status: profile.status,
                             name: profile.name,
                             age: profile.age,
-                            time: _getTimeAgo(profile.createdAt),
-                            city: "${profile.city}, ${profile.state}",
-                            tags: [profile.higherEducation, profile.occupation],
+                            time: _getTimeAgo(profile.time),
+                            city: profile.city,
+                            tags: profile.tags,
                             profileImg: profile.profileImg,
-                            senderId: widget.userId.toString(),
                           );
                         }).toList(),
                   );
@@ -1227,24 +1236,28 @@ class _MatchCard extends StatelessWidget {
 }
 
 class _InterestCard extends StatefulWidget {
-  final String profileId; // 🔹 Add profileId to identify profiles
+  final String profileId; // other person (sender)
+  final String userId; // logged-in user (receiver)
+  final int interestId; // interest row id
+  final String status;
   final String name;
   final int age;
   final String profileImg;
   final String time;
   final String city;
   final List<String> tags;
-  final String senderId; // 🔹 add senderId
 
   const _InterestCard({
     required this.profileId,
+    required this.userId,
+    required this.interestId,
+    required this.status,
     required this.name,
     required this.age,
     required this.time,
     required this.city,
     required this.tags,
     required this.profileImg,
-    required this.senderId,
     Key? key,
   }) : super(key: key);
 
@@ -1253,332 +1266,274 @@ class _InterestCard extends StatefulWidget {
 }
 
 class _InterestCardState extends State<_InterestCard> {
-  // Static sets so all cards share the same state across screens
-  static Set<String> _acceptedProfiles = {};
-  static Set<String> _declinedProfiles = {};
+  late String _status;
+  bool _accepting = false;
+  bool _declining = false;
+  bool _loading = false;
 
   @override
   void initState() {
     super.initState();
-    _loadAcceptedDeclined();
+    _status = widget.status.toLowerCase(); // set from API
   }
 
-  Future<void> _loadAcceptedDeclined() async {
-    final prefs = await SharedPreferences.getInstance();
-    final accepted = prefs.getStringList('accepted_profiles') ?? [];
-    final declined = prefs.getStringList('declined_profiles') ?? [];
+  Future<void> _acceptProfile() async {
+    setState(() => _accepting = true);
 
-    setState(() {
-      _acceptedProfiles = accepted.toSet();
-      _declinedProfiles = declined.toSet();
-    });
+    final result = await ApiService.respondInterest(
+      widget.interestId,
+      int.tryParse(widget.userId) ?? 0, // ✅ logged-in user id
+      "accept",
+    );
+
+    print(
+      "➡️ Sending: interestId=${widget.interestId}, "
+      "receiverId=${widget.userId}, action=accept",
+    );
+    print("⬅️ Response: $result");
+
+    setState(() => _accepting = false);
+
+    if (result["success"] == true) {
+      setState(() => _status = "accepted");
+    } else {
+      _showError(result["message"]);
+    }
   }
 
-  Future<void> _saveAcceptedDeclined() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList('accepted_profiles', _acceptedProfiles.toList());
-    await prefs.setStringList('declined_profiles', _declinedProfiles.toList());
+  Future<void> _declineProfile() async {
+    setState(() => _declining = true);
+
+    final result = await ApiService.respondInterest(
+      widget.interestId,
+      int.tryParse(widget.userId) ?? 0, // ✅ logged-in user id
+      "decline",
+    );
+
+    print(
+      "➡️ Sending: interestId=${widget.interestId}, "
+      "receiverId=${widget.userId}, action=decline",
+    );
+    print("⬅️ Response: $result");
+
+    setState(() => _declining = false);
+
+    if (result["success"] == true) {
+      setState(() => _status = "declined");
+    } else {
+      _showError(result["message"]);
+    }
   }
 
-  void _acceptProfile() {
-    setState(() {
-      _acceptedProfiles.add(widget.profileId);
-      _declinedProfiles.remove(widget.profileId); // optional
-    });
-    _saveAcceptedDeclined();
-  }
-
-  void _declineProfile() {
-    setState(() {
-      _declinedProfiles.add(widget.profileId);
-      _acceptedProfiles.remove(widget.profileId); // optional
-    });
-    _saveAcceptedDeclined();
+  void _showError(String? msg) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(msg ?? "Something went wrong")));
   }
 
   @override
   Widget build(BuildContext context) {
     final pinkColor = const Color(0xFFA51C48);
 
-    // If declined → don't render at all
-    if (_declinedProfiles.contains(widget.profileId))
-      return const SizedBox.shrink();
-    final alreadyAccepted = _acceptedProfiles.contains(widget.profileId);
+    // 👇 Hide declined profiles
+    if (_status == "declined") return const SizedBox.shrink();
 
-    return InkWell(
-      borderRadius: BorderRadius.circular(10),
-      onTap: () {
-        // Navigate to interests received details (if needed)
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const InterestsReceivedScreen(),
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF7F7F7),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 24,
+            backgroundImage:
+                widget.profileImg.isNotEmpty
+                    ? NetworkImage(
+                      "https://pheonixconstructions.com/assets/profile_image/${widget.profileImg}",
+                    )
+                    : const AssetImage("assets/user.png") as ImageProvider,
           ),
-        );
-      },
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF7F7F7),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Row(
-          children: [
-            CircleAvatar(
-              radius: 24,
-              backgroundImage:
-                  widget.profileImg.isNotEmpty
-                      ? NetworkImage(
-                        "https://pheonixconstructions.com/assets/profile_image/${widget.profileImg}",
-                      )
-                      : const AssetImage("assets/user.png") as ImageProvider,
-              onBackgroundImageError: (_, __) {},
-            ),
-            const SizedBox(width: 10),
+          const SizedBox(width: 10),
 
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        "${widget.name}, ${widget.age}",
-                        style: const TextStyle(fontWeight: FontWeight.w600),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // name + age + time
+                Row(
+                  children: [
+                    Text(
+                      "${widget.name}, ${widget.age}",
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    const Spacer(),
+                    Text(
+                      widget.time,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.black54,
                       ),
-                      const SizedBox(width: 6),
-                      const Icon(Icons.verified, color: Colors.green, size: 14),
-                      const Spacer(),
-                      Text(
-                        widget.time,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Colors.black54,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Text(
-                    widget.city,
-                    style: const TextStyle(fontSize: 13, color: Colors.black54),
-                  ),
-                  const SizedBox(height: 4),
+                    ),
+                  ],
+                ),
+                Text(
+                  widget.city,
+                  style: const TextStyle(fontSize: 13, color: Colors.black54),
+                ),
+                const SizedBox(height: 6),
 
-                  // Tags
-                  Row(
-                    children:
-                        widget.tags
-                            .map(
-                              (t) => Container(
-                                margin: const EdgeInsets.only(right: 6),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 3,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(
-                                    color: pinkColor.withOpacity(0.15),
-                                  ),
-                                ),
-                                child: Text(
-                                  t,
-                                  style: const TextStyle(fontSize: 12),
+                // tags
+                Row(
+                  children:
+                      widget.tags
+                          .map(
+                            (t) => Container(
+                              margin: const EdgeInsets.only(right: 6),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: pinkColor.withOpacity(0.15),
                                 ),
                               ),
-                            )
-                            .toList(),
-                  ),
+                              child: Text(
+                                t,
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                            ),
+                          )
+                          .toList(),
+                ),
+                const SizedBox(height: 6),
 
-                  const SizedBox(height: 6),
-
-                  // 🔹 Show Accept/Decline OR Chat button
+                // 🔹 Action buttons
+                if (_loading)
+                  const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(8.0),
+                      child: CircularProgressIndicator(
+                        color: Color(0xFFA51C48),
+                      ),
+                    ),
+                  )
+                else if (_status == "pending") ...[
                   Row(
                     children: [
-                      if (!alreadyAccepted) ...[
-                        OutlinedButton(
-                          onPressed: _declineProfile,
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 18,
-                              vertical: 6,
-                            ),
-                            side: BorderSide(color: Colors.grey.shade300),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(6),
-                            ),
+                      OutlinedButton(
+                        onPressed: _declining ? null : _declineProfile,
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 18,
+                            vertical: 6,
                           ),
-                          child: const Text(
-                            "Decline",
-                            style: TextStyle(color: Colors.black54),
+                          side: BorderSide(color: Colors.grey.shade300),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(6),
                           ),
                         ),
-                        const SizedBox(width: 10),
-                        ElevatedButton(
-                          onPressed: _acceptProfile,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: pinkColor,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 22,
-                              vertical: 6,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            elevation: 0,
-                          ),
-                          child: const Text(
-                            "Accept",
-                            style: TextStyle(color: Colors.white),
-                          ),
-                        ),
-                      ] else ...[
-                        ElevatedButton.icon(
-                          onPressed: () async {
-                            showDialog(
-                              context: context,
-                              barrierDismissible: false,
-                              builder:
-                                  (_) => Dialog(
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16),
-                                    ),
-                                    elevation: 10,
-                                    backgroundColor: Colors.white,
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(20.0),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          const CircularProgressIndicator(
-                                            color: Color(
-                                              0xFFA51C48,
-                                            ), // pink color
-                                          ),
-                                          const SizedBox(width: 20),
-                                          const Text(
-                                            "Checking subscription...",
-                                            style: TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
+                        child:
+                            _declining
+                                ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
                                   ),
-                            );
+                                )
+                                : const Text(
+                                  "Decline",
+                                  style: TextStyle(color: Colors.black54),
+                                ),
+                      ),
 
-                            try {
-                              final result =
-                                  await ApiService.getSubscriptionStatus(
-                                    int.parse(widget.senderId ?? '0'),
-                                  );
-
-                              Navigator.pop(context); // remove loading dialog
-
-                              if (result['status'] == 'success') {
-                                final isSubscribed =
-                                    result['subscribed'] == true ||
-                                    result['subscribed'] == 1 ||
-                                    result['subscribed'] == 'true';
-
-                                if (isSubscribed) {
-                                  // Navigate to MessageScreen
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder:
-                                          (context) => MessageScreen(
-                                            senderId: widget.senderId ?? '',
-                                            receiverId: widget.profileId,
-                                            receiverName: widget.name,
-                                          ),
-                                    ),
-                                  );
-                                } else {
-                                  // Not subscribed → show upgrade alert
-                                  showDialog(
-                                    context: context,
-                                    builder:
-                                        (context) => AlertDialog(
-                                          title: const Text('Upgrade Required'),
-                                          content: const Text(
-                                            'You need a premium subscription to chat.',
-                                          ),
-                                          actions: [
-                                            TextButton(
-                                              onPressed:
-                                                  () => Navigator.pop(context),
-                                              child: const Text('Cancel'),
-                                            ),
-                                            TextButton(
-                                              onPressed: () {
-                                                Navigator.pop(context);
-                                                Navigator.push(
-                                                  context,
-                                                  MaterialPageRoute(
-                                                    builder:
-                                                        (_) =>
-                                                            const SubscriptionScreen(),
-                                                  ),
-                                                );
-                                              },
-                                              child: const Text('Upgrade'),
-                                            ),
-                                          ],
-                                        ),
-                                  );
-                                }
-                              } else {
-                                // API returned error
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      result['message'] ??
-                                          'Failed to check subscription',
-                                    ),
-                                  ),
-                                );
-                              }
-                            } catch (e) {
-                              Navigator.pop(context); // remove loading dialog
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Error: $e')),
-                              );
-                            }
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: pinkColor,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 22,
-                              vertical: 6,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            elevation: 0,
+                      const SizedBox(width: 10),
+                      ElevatedButton(
+                        onPressed: _accepting ? null : _acceptProfile,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: pinkColor,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 22,
+                            vertical: 6,
                           ),
-                          icon: const Icon(
-                            Icons.chat,
-                            color: Colors.white,
-                            size: 16,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(6),
                           ),
-                          label: const Text(
-                            "Chat",
-                            style: TextStyle(color: Colors.white),
-                          ),
+                          elevation: 0,
                         ),
-                      ],
+                        child:
+                            _accepting
+                                ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                                : const Text(
+                                  "Accept",
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                      ),
                     ],
                   ),
+                ] else if (_status == "accepted") ...[
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      // ...inside _InterestCardState, before Navigator.push...
+                      print(
+                        "Navigating to MessageScreen with senderId=${widget.userId}, receiverId=${widget.profileId}, name=${widget.name}",
+                      );
+                      // ...inside _InterestCardState, before Navigator.push...
+                      if (widget.profileId.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Cannot chat: Profile ID missing"),
+                          ),
+                        );
+                        return;
+                      }
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (_) => MessageScreen(
+                                senderId: widget.userId,
+                                receiverId: widget.profileId,
+                                receiverName: widget.name,
+                              ),
+                        ),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: pinkColor,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 22,
+                        vertical: 6,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      elevation: 0,
+                    ),
+                    icon: const Icon(Icons.chat, color: Colors.white, size: 16),
+                    label: const Text(
+                      "Chat",
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
                 ],
-              ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

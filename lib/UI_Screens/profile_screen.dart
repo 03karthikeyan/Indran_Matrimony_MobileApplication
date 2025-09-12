@@ -270,33 +270,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   : const AssetImage('assets/Ellipse222(1).png')
                                       as ImageProvider,
                         ),
-                        Positioned(
-                          bottom: 0,
-                          right: 4,
-                          child: GestureDetector(
-                            onTap:
-                                _pickAndUploadImage, // 👈 method to pick and upload new image
-                            child: Container(
-                              padding: const EdgeInsets.all(6),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black26,
-                                    blurRadius: 4,
-                                    offset: Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: const Icon(
-                                Icons.camera_alt,
-                                size: 20,
-                                color: Colors.black87,
-                              ),
-                            ),
-                          ),
-                        ),
                       ],
                     ),
 
