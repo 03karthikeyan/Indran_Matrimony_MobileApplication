@@ -4,6 +4,7 @@ import 'package:matrimony/UI_Screens/Message_Screen.dart';
 import 'package:matrimony/services/api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:url_launcher/url_launcher_string.dart';
 import 'subscription_screen.dart';
 
 class MatchesDetailsScreen extends StatefulWidget {
@@ -77,26 +78,33 @@ class _MatchesDetailsScreenState extends State<MatchesDetailsScreen> {
     }
   }
 
-  Future<void> openWhatsApp(String number, String message) async {
-    // Remove + or spaces
-    number = number.replaceAll(RegExp(r'\s+|\+'), '');
-    final Uri whatsappUri = Uri.parse(
-      "whatsapp://send?phone=$number&text=${Uri.encodeComponent(message)}",
-    );
-    if (await canLaunchUrl(whatsappUri)) {
-      await launchUrl(whatsappUri, mode: LaunchMode.externalApplication);
-    } else {
-      print("WhatsApp not installed");
+  Future<void> openWhatsApp(String phone, String message) async {
+    final encodedMessage = Uri.encodeComponent(message);
+    final whatsappAppUrl = "whatsapp://send?phone=$phone&text=$encodedMessage";
+    final whatsappWebUrl = "https://wa.me/$phone?text=$encodedMessage";
+
+    try {
+      // Try WhatsApp App first
+      if (await launchUrlString(
+        whatsappAppUrl,
+        mode: LaunchMode.externalApplication,
+      )) {
+        print("Opened WhatsApp app");
+      } else {
+        // fallback to WhatsApp Web
+        if (await launchUrlString(
+          whatsappWebUrl,
+          mode: LaunchMode.externalApplication,
+        )) {
+          print("Opened WhatsApp Web");
+        } else {
+          print("Cannot launch WhatsApp Web either");
+        }
+      }
+    } catch (e) {
+      print("Error opening WhatsApp: $e");
     }
   }
-
-  // Example: Load from SharedPreferences or API
-  // Future<void> _loadUserPremiumStatus() async {
-  //   final prefs = await SharedPreferences.getInstance();
-  //   setState(() {
-  //     isPremiumUser = prefs.getBool('isPremium') ?? false;
-  //   });
-  // }
 
   String formatContact(String contact, bool isPremium) {
     if (contact.isEmpty) return "--";
@@ -146,65 +154,119 @@ class _MatchesDetailsScreenState extends State<MatchesDetailsScreen> {
           // Profile Card
           Container(
             margin: const EdgeInsets.fromLTRB(12, 16, 12, 10),
-            padding: const EdgeInsets.all(0),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black12,
-                  blurRadius: 7,
-                  offset: Offset(0, 3),
+                  blurRadius: 8,
+                  offset: Offset(0, 4),
                 ),
               ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Image
-                ClipRRect(
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(14),
-                    topRight: Radius.circular(14),
-                  ),
-                  child: Stack(
-                    alignment: Alignment.topRight,
-                    children: [
-                      Image.network(
+                // Profile Image with Match % overlay
+                Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(16),
+                        topRight: Radius.circular(16),
+                      ),
+                      child: Image.network(
                         "https://pheonixconstructions.com/assets/profile_image/${widget.match['profile_img']}",
                         width: double.infinity,
-                        height: 180,
+                        height: 200,
                         fit: BoxFit.cover,
                         errorBuilder:
                             (context, error, stackTrace) => Container(
                               width: double.infinity,
-                              height: 180,
+                              height: 200,
                               color: Colors.grey[300],
                               child: const Icon(
                                 Icons.person,
-                                size: 50,
+                                size: 60,
                                 color: Colors.white,
                               ),
                             ),
                       ),
-                      Padding(
-                        padding: const EdgeInsets.only(top: 13, right: 13),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black12,
-                                blurRadius: 6,
-                                offset: Offset(0, 1),
-                              ),
-                            ],
+                    ),
+
+                    // Match Percentage Circle on top-left
+                    Positioned(
+                      top: 12,
+                      left: 12,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Container(
+                            width: 55,
+                            height: 55,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.grey[200],
+                            ),
                           ),
+                          SizedBox(
+                            width: 55,
+                            height: 55,
+                            child: CircularProgressIndicator(
+                              value: (widget.match['matchPercent'] ?? 60) / 100,
+                              strokeWidth: 5,
+                              color: Color(0xFF16C93B),
+                              backgroundColor: Colors.grey[300],
+                            ),
+                          ),
+                          Text(
+                            "${widget.match['matchPercent'] ?? 60}%",
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Verified Badge top-right
+                    Positioned(
+                      top: 12,
+                      right: 12,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEBF7F0),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: const [
+                            Icon(
+                              Icons.verified,
+                              color: Color(0xFF16C93B),
+                              size: 16,
+                            ),
+                            SizedBox(width: 4),
+                            Text(
+                              "Verified",
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF16C93B),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
 
                 Padding(
@@ -215,80 +277,130 @@ class _MatchesDetailsScreenState extends State<MatchesDetailsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Verified, membership, phone/whatsapp row
+                      // Name + Age/Location/Caste
+                      Text(
+                        widget.match['name'] ?? "Unknown",
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        widget.match['user_code'] ?? "--",
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        "${widget.match['age'] ?? '--'} yrs • ${widget.match['caste'] ?? '--'} • ${widget.match['city'] ?? '--'}",
+                        style: const TextStyle(
+                          fontSize: 14.5,
+                          color: Colors.black87,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+
+                      // Education & Job Row
                       Row(
                         children: [
-                          // ✅ Always show Verified
+                          Icon(
+                            Icons.school,
+                            size: 16,
+                            color: Color(0xFFA51C48),
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              widget.match['higher_education'] ?? "--",
+                              style: const TextStyle(
+                                fontSize: 13.5,
+                                color: Colors.black87,
+                              ),
+                            ),
+                          ),
+                          Icon(Icons.work, size: 16, color: Color(0xFFA51C48)),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              widget.match['occupation']?.trim().isNotEmpty ==
+                                      true
+                                  ? widget.match['occupation']
+                                  : "Not specified",
+                              style: const TextStyle(
+                                fontSize: 13.5,
+                                color: Colors.black87,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      // Premium / Free Chip & Actions
+                      Row(
+                        children: [
                           Container(
-                            margin: const EdgeInsets.only(left: 7),
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 9,
-                              vertical: 3,
+                              horizontal: 12,
+                              vertical: 5,
                             ),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFEBF7F0),
-                              borderRadius: BorderRadius.circular(8),
+                              color:
+                                  isPremiumUser
+                                      ? Color(0xFFEAF6FF)
+                                      : Color(0xFFFFF0F0),
+                              borderRadius: BorderRadius.circular(14),
                             ),
                             child: Row(
-                              children: const [
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
                                 Icon(
-                                  Icons.verified,
-                                  color: Color(0xFF16C93B),
-                                  size: 15,
+                                  isPremiumUser
+                                      ? Icons.workspace_premium
+                                      : Icons.person_outline,
+                                  color:
+                                      isPremiumUser
+                                          ? Color(0xFF1D7AF5)
+                                          : Colors.red,
+                                  size: 16,
                                 ),
-                                SizedBox(width: 4),
+                                const SizedBox(width: 5),
                                 Text(
-                                  "Verified",
+                                  isPremiumUser
+                                      ? "Premium Member"
+                                      : "Free Member",
                                   style: TextStyle(
-                                    fontSize: 12,
-                                    color: Color(0xFF16C93B),
+                                    fontSize: 13,
                                     fontWeight: FontWeight.w600,
+                                    color:
+                                        isPremiumUser
+                                            ? Color(0xFF1D7AF5)
+                                            : Colors.red,
                                   ),
                                 ),
                               ],
                             ),
                           ),
 
-                          // ✅ Show Membership + actions only for premium
+                          const Spacer(),
+
+                          // Only Premium users see contact options
                           if (isPremiumUser) ...[
-                            const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 9,
-                                vertical: 3,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFEAF6FF),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Row(
-                                children: const [
-                                  Icon(
-                                    Icons.workspace_premium,
-                                    color: Color(0xFF1D7AF5),
-                                    size: 15,
-                                  ),
-                                  SizedBox(width: 4),
-                                  Text(
-                                    "Membership",
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Color(0xFF1D7AF5),
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const Spacer(),
                             IconButton(
-                              icon: const Icon(Icons.call),
+                              icon: const Icon(
+                                Icons.call,
+                                color: Color(0xFFA51C48),
+                              ),
                               onPressed:
                                   () => openDialer(
                                     widget.match['contact_no'] ?? '',
                                   ),
                             ),
-
                             IconButton(
                               icon: const FaIcon(
                                 FontAwesomeIcons.whatsapp,
@@ -303,74 +415,6 @@ class _MatchesDetailsScreenState extends State<MatchesDetailsScreen> {
                           ],
                         ],
                       ),
-
-                      const SizedBox(height: 10),
-                      // Name, match %
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              widget.match['name'] ?? "Unknown",
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 18,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 2),
-                      // const Text(
-                      //   "TN12KLMI981 | Last seen 2m ago",
-                      //   style: TextStyle(fontSize: 12, color: Colors.black54),
-                      // ),
-                      const SizedBox(height: 7),
-                      Row(
-                        children: [
-                          Text(
-                            "${widget.match['age'] ?? '29'} years • ${widget.match['caste'] ?? 'Others'} • ${widget.match['city'] ?? '--'}",
-                            style: TextStyle(
-                              fontSize: 14.5,
-                              color: Colors.black87,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 7),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.school,
-                            size: 15,
-                            color: Color(0xFFA51C48),
-                          ),
-                          SizedBox(width: 4),
-                          Text(
-                            widget.match['higher_education'] ?? "MCA",
-                            style: TextStyle(
-                              fontSize: 13.5,
-                              color: Colors.black87,
-                            ),
-                          ),
-                          SizedBox(width: 13),
-                          Icon(Icons.work, size: 15, color: Color(0xFFA51C48)),
-                          SizedBox(width: 4),
-                          Text(
-                            widget.match['occupation']
-                                        ?.toString()
-                                        .trim()
-                                        .isNotEmpty ==
-                                    true
-                                ? widget.match['occupation']
-                                : "Not specified",
-                            style: TextStyle(
-                              fontSize: 13.5,
-                              color: Colors.black87,
-                            ),
-                          ),
-                        ],
-                      ),
                     ],
                   ),
                 ),
@@ -379,7 +423,7 @@ class _MatchesDetailsScreenState extends State<MatchesDetailsScreen> {
           ),
           // About Section
           _SectionCard(
-            title: "About ${widget.match['name'] ?? 'User'}",
+            title: "About ${widget.match['name'] ?? '--'}",
             body:
                 widget.match['about_yourself']?.toString().trim().isNotEmpty ==
                         true
@@ -398,14 +442,26 @@ class _MatchesDetailsScreenState extends State<MatchesDetailsScreen> {
                 TableRow(
                   children: [
                     const Text("Age"),
-                    Text("${widget.match['age'] ?? '29'} Years"),
+                    Text("${widget.match['age'] ?? '--'} Years"),
                   ],
                 ),
 
                 TableRow(
                   children: [
-                    const Text("Language"),
-                    Text('Tamil,English,Hindi'),
+                    const Text("Gender"),
+                    Text(widget.match['gender'] ?? '--'),
+                  ],
+                ),
+                TableRow(
+                  children: [
+                    const Text("Martial Status"),
+                    Text(widget.match['marital_status'] ?? '--'),
+                  ],
+                ),
+                TableRow(
+                  children: [
+                    const Text("Physical Status"),
+                    Text(widget.match['physical_status'] ?? '--'),
                   ],
                 ),
 
@@ -421,8 +477,30 @@ class _MatchesDetailsScreenState extends State<MatchesDetailsScreen> {
                     Text(widget.match['state'] ?? '--'),
                   ],
                 ),
-                TableRow(children: [const Text("Smoking Habits"), Text('No')]),
-                TableRow(children: [const Text("Drinking Habits"), Text('No')]),
+                TableRow(
+                  children: [
+                    const Text("Height"),
+                    Text(widget.match['height'] ?? '--'),
+                  ],
+                ),
+                TableRow(
+                  children: [
+                    const Text("Weight"),
+                    Text(widget.match['weight'] ?? '--'),
+                  ],
+                ),
+                TableRow(
+                  children: [
+                    const Text("Mother Tongue"),
+                    Text(widget.match['mother_tongue'] ?? '--'),
+                  ],
+                ),
+                TableRow(
+                  children: [
+                    const Text("Diet"),
+                    Text(widget.match['diet'] ?? '--'),
+                  ],
+                ),
               ],
             ),
           ),
@@ -675,29 +753,29 @@ class _MatchesDetailsScreenState extends State<MatchesDetailsScreen> {
                 0: FlexColumnWidth(1.7),
                 1: FlexColumnWidth(2.3),
               },
-              children: const [
+              children: [
                 TableRow(
                   children: [
-                    Text("Father"),
-                    Text("Ramesh Kumar, Retired Government Officer"),
+                    Text("Father's Name"),
+                    Text(widget.match['father_name'] ?? '--'),
                   ],
                 ),
                 TableRow(
-                  children: [Text("Mother"), Text("Lakshmi, Homemaker")],
+                  children: [
+                    Text("Mother's Name"),
+                    Text(widget.match['mother_name'] ?? '--'),
+                  ],
                 ),
                 TableRow(
                   children: [
                     Text("Siblings"),
-                    Text("1 Brother (Married), 1 Sister (Studying)"),
+                    Text(widget.match['siblings'] ?? '--'),
                   ],
                 ),
                 TableRow(
-                  children: [Text("Family Type"), Text("Nuclear Family")],
-                ),
-                TableRow(
                   children: [
-                    Text("Family Values"),
-                    Text("Traditional with Modern"),
+                    Text("Native Place"),
+                    Text(widget.match['native_place'] ?? '--'),
                   ],
                 ),
               ],
@@ -715,11 +793,8 @@ class _MatchesDetailsScreenState extends State<MatchesDetailsScreen> {
                 TableRow(
                   children: [
                     Text("Education"),
-                    Text("${widget.match['higher_education'] ?? 'MCA'}"),
+                    Text("${widget.match['higher_education'] ?? '--'}"),
                   ],
-                ),
-                TableRow(
-                  children: [Text("College"), Text("Anna University, Chennai")],
                 ),
                 TableRow(
                   children: [
@@ -730,13 +805,19 @@ class _MatchesDetailsScreenState extends State<MatchesDetailsScreen> {
                 TableRow(
                   children: [
                     Text("Company"),
-                    Text("${widget.match['employee_in'] ?? 'Private'}"),
+                    Text("${widget.match['employee_in'] ?? '--'}"),
+                  ],
+                ),
+                TableRow(
+                  children: [
+                    Text("Work Location"),
+                    Text("${widget.match['work_location'] ?? '--'}"),
                   ],
                 ),
                 TableRow(
                   children: [
                     Text("Income"),
-                    Text("${widget.match['annual_income'] ?? '3LPA'}"),
+                    Text("${widget.match['income_range'] ?? '--'}"),
                   ],
                 ),
               ],
@@ -771,7 +852,7 @@ class _MatchesDetailsScreenState extends State<MatchesDetailsScreen> {
                 ),
                 TableRow(
                   children: [
-                    Text("Gothram"),
+                    Text("Dosam"),
                     Text("${widget.match['Gothram'] ?? '--'}"),
                   ],
                 ),
@@ -790,57 +871,103 @@ class _MatchesDetailsScreenState extends State<MatchesDetailsScreen> {
                   isPremiumUser
                       ? Column(
                         children: [
-                          Row(
-                            children: [
-                              const Icon(Icons.star),
-                              Text(
-                                'Star',
-                                style: TextStyle(fontWeight: FontWeight.bold),
+                          // Jathakam
+                          if (widget.match['jathakam_path'] != null &&
+                              widget.match['jathakam_path']
+                                  .toString()
+                                  .isNotEmpty)
+                            InkWell(
+                              onTap: () {
+                                // Open PDF or file
+                                launchUrl(
+                                  Uri.parse(widget.match['jathakam_path']),
+                                );
+                              },
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.picture_as_pdf,
+                                    color: Colors.red,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Text(
+                                    'Jathakam',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  const Icon(Icons.arrow_forward_ios, size: 16),
+                                ],
                               ),
-                              const Spacer(),
-                              Text("Bharani"),
-                            ],
-                          ),
-                          Row(
-                            children: [
-                              const Icon(Icons.brightness_3),
-                              Text(
-                                'Rasi',
-                                style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          const SizedBox(height: 10),
+
+                          // Community Certificate
+                          if (widget.match['community_certificate_path'] !=
+                                  null &&
+                              widget.match['community_certificate_path']
+                                  .toString()
+                                  .isNotEmpty)
+                            InkWell(
+                              onTap: () {
+                                launchUrl(
+                                  Uri.parse(
+                                    widget.match['community_certificate_path'],
+                                  ),
+                                );
+                              },
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.picture_as_pdf,
+                                    color: Colors.blue,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Text(
+                                    'Community Certificate',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  const Icon(Icons.arrow_forward_ios, size: 16),
+                                ],
                               ),
-                              const Spacer(),
-                              Text("Cancer"),
-                            ],
-                          ),
+                            ),
                         ],
                       )
                       : Column(
                         children: [
                           Row(
                             children: const [
-                              Icon(Icons.lock),
+                              Icon(Icons.lock, color: Colors.grey),
+                              SizedBox(width: 8),
                               Text(
-                                'Star',
+                                'Jathakam',
                                 style: TextStyle(fontWeight: FontWeight.bold),
                               ),
                               Spacer(),
                               Text("**********"),
                             ],
                           ),
+                          const SizedBox(height: 8),
                           Row(
                             children: const [
-                              Icon(Icons.lock),
+                              Icon(Icons.lock, color: Colors.grey),
+                              SizedBox(width: 8),
                               Text(
-                                'Rasi',
+                                'Community Certificate',
                                 style: TextStyle(fontWeight: FontWeight.bold),
                               ),
                               Spacer(),
-                              Text("*******"),
+                              Text("**********"),
                             ],
                           ),
+                          const SizedBox(height: 10),
                           ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: pink,
+                              backgroundColor: Colors.pink,
                             ),
                             onPressed: () {
                               Navigator.push(
@@ -851,7 +978,7 @@ class _MatchesDetailsScreenState extends State<MatchesDetailsScreen> {
                               );
                             },
                             child: const Text(
-                              "Upgrade to view horoscope",
+                              "Upgrade to view documents",
                               style: TextStyle(color: Colors.white),
                             ),
                           ),
@@ -859,47 +986,6 @@ class _MatchesDetailsScreenState extends State<MatchesDetailsScreen> {
                       ),
             ),
           ),
-          // Partner Preferences
-          _SectionCard(
-            title: "Partner Preferences",
-            bodyWidget: Table(
-              columnWidths: const {
-                0: FlexColumnWidth(1.7),
-                1: FlexColumnWidth(2.3),
-              },
-              children: const [
-                TableRow(children: [Text("Age"), Text("28–32 years")]),
-                TableRow(children: [Text("Height"), Text("5'8\"–6'0\"")]),
-                TableRow(
-                  children: [
-                    Text("Education"),
-                    Text("Any Professional Degree"),
-                  ],
-                ),
-                TableRow(
-                  children: [
-                    Text("Profession"),
-                    Text("IT, Engineering, Medical,"),
-                  ],
-                ),
-                TableRow(
-                  children: [
-                    Text("Location"),
-                    Text("Chennai, Bangalore, Open to relocate"),
-                  ],
-                ),
-                TableRow(
-                  children: [
-                    Text("Expectations"),
-                    Text(
-                      "Well-educated, family-oriented, respectful, ambitious",
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-
           // Profiles you may like
         ],
       ),

@@ -55,7 +55,7 @@ class Profile {
       subCaste: json['sub_caste'],
       gothram: json['Gothram'],
       employeeIn: json['employee_in'],
-      annualIncome: json['annual_income'],
+      annualIncome: json['income_range'],
       totalViews: int.tryParse(json['totalViews']?.toString() ?? '0'),
     );
   }
@@ -77,7 +77,7 @@ class Profile {
       'sub_caste': subCaste,
       'Gothram': gothram,
       'employee_in': employeeIn,
-      'annual_income': annualIncome,
+      'income_range': annualIncome,
       'totalViews': totalViews,
     };
   }

@@ -47,67 +47,81 @@ class _AboutYourselfScreenState extends State<AboutYourselfScreen> {
     }
   }
 
- Future<void> _registerUser() async {
-  if (aboutController.text.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Please fill about yourself field')),
-    );
-    return;
+  Future<void> _registerUser() async {
+    if (aboutController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill about yourself field')),
+      );
+      return;
+    }
+
+    setState(() => isLoading = true);
+    widget.userData.aboutYourself = aboutController.text;
+
+    // ✅ Handle profile image
+  if (uploadedImages.isNotEmpty) {
+    // If images uploaded, pick first image name
+    final firstImage = uploadedImages.first;
+    widget.userData.profileImg = firstImage.name; 
+    widget.userData.profileImgPath = firstImage.path; // or upload then set URL
+  } else {
+    // If no images uploaded, send default values
+    widget.userData.profileImg = "profile.jpg";
+    widget.userData.profileImgPath =
+        "https://pheonixconstructions.com/assets/profile_image/profile.jpg";
   }
 
-  setState(() => isLoading = true);
-  widget.userData.aboutYourself = aboutController.text;
+    try {
+      final result = await ApiService.registerUser(widget.userData.toMap());
+      print("Registration request: ${jsonEncode(widget.userData.toMap())}");
+      print("Registration response: $result");
 
-  try {
-    final result = await ApiService.registerUser(widget.userData.toMap());
-    print("Registration request: ${jsonEncode(widget.userData.toMap())}");
-    print("Registration response: $result");
+      if (mounted) {
+        if (result['success']) {
+          // ✅ Use the same mobile number you registered with
+          final mobile = widget.userData.contactNo ?? "";
 
-    if (mounted) {
-      if (result['success']) {
-        // ✅ Use the same mobile number you registered with
-        final mobile = widget.userData.contactNo ?? "";
+          if (mobile.isEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("Mobile number missing")),
+            );
+            return;
+          }
 
-        if (mobile.isEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Mobile number missing")),
-          );
-          return;
-        }
+          // ✅ Trigger OTP by login API
+          final loginResult = await ApiService.login(mobile);
+          print("Login after registration response: $loginResult");
 
-        // ✅ Trigger OTP by login API
-        final loginResult = await ApiService.login(mobile);
-        print("Login after registration response: $loginResult");
-
-        if (loginResult['success'] == 1 ||
-            loginResult['data']?['success'] == 1) {
-          // OTP sent successfully
-          _showSuccessDialog(mobile);
+          if (loginResult['success'] == 1 ||
+              loginResult['data']?['success'] == 1) {
+            // OTP sent successfully
+            _showSuccessDialog(mobile);
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  loginResult['message'] ??
+                      'Failed to send OTP after registration',
+                ),
+              ),
+            );
+          }
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                loginResult['message'] ?? 'Failed to send OTP after registration',
-              ),
-            ),
+            SnackBar(content: Text(result['error'] ?? 'Registration failed')),
           );
         }
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(result['error'] ?? 'Registration failed')),
-        );
       }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => isLoading = false);
     }
-  } catch (e) {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
-    }
-  } finally {
-    if (mounted) setState(() => isLoading = false);
   }
-}
 
   //registration success dialogue method
   void _showSuccessDialog(String mobile) {

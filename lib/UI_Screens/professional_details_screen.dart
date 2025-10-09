@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:matrimony/services/api_service.dart';
 import 'about_yourself_screen.dart';
 import '../models/user_data.dart';
@@ -18,24 +21,21 @@ class _ProfessionalDetailsScreenState extends State<ProfessionalDetailsScreen> {
   final TextEditingController employedInController = TextEditingController();
   final TextEditingController occupationController = TextEditingController();
   final TextEditingController annualIncomeController = TextEditingController();
+  final TextEditingController districtController = TextEditingController();
+  final TextEditingController address1Controller = TextEditingController();
+  final TextEditingController address2Controller = TextEditingController();
+  final TextEditingController pincodeController = TextEditingController();
 
   String? workLocation;
   String? state;
   String? city;
-
+  final UserData userData = UserData();
   final List<String> workLocations = ['Office', 'Remote', 'Hybrid'];
   final List<String> cities = ['Chennai', 'Coimbatore', 'Madurai'];
 
-  final List<String> incomeRanges = [
-    "Below 2 Lakh",
-    "2 - 5 Lakh",
-    "5 - 10 Lakh",
-    "10 - 15 Lakh",
-    "15 - 25 Lakh",
-    "25 - 50 Lakh",
-    "50 Lakh - 1 Crore",
-    "Above 1 Crore",
-  ];
+  List<AnnualIncome> _incomeList = [];
+  bool _isLoadingIncome = true;
+
   List<String> stateOptions = [];
   String? selectedState;
   bool isLoading = true;
@@ -44,6 +44,34 @@ class _ProfessionalDetailsScreenState extends State<ProfessionalDetailsScreen> {
   void initState() {
     super.initState();
     fetchStates();
+    fetchAnnualIncomeList();
+  }
+
+  //Income List Fetch
+
+  Future<void> fetchAnnualIncomeList() async {
+    try {
+      final response = await http.get(
+        Uri.parse(
+          "https://pheonixconstructions.com/Matrimony API/annual_income_list.php",
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        if (data['success'] == true) {
+          final List<dynamic> list = data['data'];
+          setState(() {
+            _incomeList = list.map((e) => AnnualIncome.fromJson(e)).toList();
+            _isLoadingIncome = false;
+          });
+        }
+      }
+    } catch (e) {
+      print("Error fetching annual income list: $e");
+      setState(() => _isLoadingIncome = false);
+    }
   }
 
   void fetchStates() async {
@@ -269,14 +297,17 @@ class _ProfessionalDetailsScreenState extends State<ProfessionalDetailsScreen> {
                 SizedBox(height: 4),
 
                 CustomDropdown<String>.search(
-                  hintText: "Select Income Range",
-                  items: incomeRanges,
+                  hintText: "Select Annual Income",
+                  items: _incomeList.map((e) => e.income).toList(),
                   initialItem:
                       annualIncomeController.text.isNotEmpty
                           ? annualIncomeController.text
-                          : null, // if already selected
+                          : null,
                   onChanged: (value) {
-                    annualIncomeController.text = value!;
+                    setState(() {
+                      annualIncomeController.text = value ?? '';
+                      userData.annualIncome = value;
+                    });
                   },
                   decoration: CustomDropdownDecoration(
                     closedBorder: Border.all(color: Colors.grey.shade400),
@@ -289,146 +320,271 @@ class _ProfessionalDetailsScreenState extends State<ProfessionalDetailsScreen> {
                     ),
                   ),
                 ),
-              ],
-            ),
 
-            SizedBox(height: 16),
-
-            // Inside your widget build:
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Work Location
-                Text(
-                  "Work Location:",
-                  style: TextStyle(fontSize: 14, color: Colors.black87),
-                ),
-                SizedBox(height: 4),
-                CustomDropdown<String>.search(
-                  hintText: "Select Work Location",
-                  items: workLocations,
-                  initialItem: workLocation,
-                  onChanged: (value) {
-                    setState(() => workLocation = value);
-                  },
-                  decoration: CustomDropdownDecoration(
-                    closedBorder: Border.all(color: Colors.grey.shade400),
-                    closedBorderRadius: BorderRadius.circular(9),
-                    expandedBorder: Border.all(
-                      color: Colors.blueAccent,
-                    ), // when opened
-                    expandedBorderRadius: BorderRadius.circular(9),
-                    hintStyle: TextStyle(
-                      color: Colors.grey.shade600,
-                      fontSize: 14,
-                    ),
-                  ),
-                ),
                 SizedBox(height: 16),
 
-                // State
-                Text(
-                  "State:",
-                  style: TextStyle(fontSize: 14, color: Colors.black87),
-                ),
-                SizedBox(height: 4),
-                CustomDropdown<String>.search(
-                  hintText: "Select State",
-                  items: stateOptions,
-                  initialItem: selectedState,
-                  onChanged: (value) {
-                    setState(() => selectedState = value);
-                  },
-                  decoration: CustomDropdownDecoration(
-                    closedBorder: Border.all(color: Colors.grey.shade400),
-                    closedBorderRadius: BorderRadius.circular(9),
-                    expandedBorder: Border.all(
-                      color: Colors.blueAccent,
-                    ), // when opened
-                    expandedBorderRadius: BorderRadius.circular(9),
-                    hintStyle: TextStyle(
-                      color: Colors.grey.shade600,
-                      fontSize: 14,
+                // Inside your widget build:
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Work Location
+                    Text(
+                      "Work Location:",
+                      style: TextStyle(fontSize: 14, color: Colors.black87),
                     ),
-                  ),
-                ),
-                SizedBox(height: 16),
-
-                // City
-                Text(
-                  "City:",
-                  style: TextStyle(fontSize: 14, color: Colors.black87),
-                ),
-                SizedBox(height: 4),
-                CustomDropdown<String>.search(
-                  hintText: "Select City",
-                  items: cities,
-                  initialItem: city,
-                  onChanged: (value) {
-                    setState(() => city = value);
-                  },
-                  decoration: CustomDropdownDecoration(
-                    closedBorder: Border.all(color: Colors.grey.shade400),
-                    closedBorderRadius: BorderRadius.circular(9),
-                    expandedBorder: Border.all(
-                      color: Colors.blueAccent,
-                    ), // when opened
-                    expandedBorderRadius: BorderRadius.circular(9),
-                    hintStyle: TextStyle(
-                      color: Colors.grey.shade600,
-                      fontSize: 14,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-
-            SizedBox(height: 30),
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: pinkColor,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  elevation: 4,
-                  shadowColor: Colors.black26,
-                ),
-                onPressed: () {
-                  if (_validateForm()) {
-                    widget.userData.higherEducation = educationController.text;
-                    widget.userData.employeeIn = employedInController.text;
-                    widget.userData.occupation = occupationController.text;
-                    widget.userData.annualIncome = annualIncomeController.text;
-                    widget.userData.workLocation = workLocation;
-                    widget.userData.state = selectedState;
-                    widget.userData.city = city;
-
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder:
-                            (context) => AboutYourselfScreen(
-                              userData: widget.userData,
-                              mobile: '',
-                            ),
+                    SizedBox(height: 4),
+                    CustomDropdown<String>.search(
+                      hintText: "Select Work Location",
+                      items: workLocations,
+                      initialItem: workLocation,
+                      onChanged: (value) {
+                        setState(() => workLocation = value);
+                      },
+                      decoration: CustomDropdownDecoration(
+                        closedBorder: Border.all(color: Colors.grey.shade400),
+                        closedBorderRadius: BorderRadius.circular(9),
+                        expandedBorder: Border.all(
+                          color: Colors.blueAccent,
+                        ), // when opened
+                        expandedBorderRadius: BorderRadius.circular(9),
+                        hintStyle: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 14,
+                        ),
                       ),
-                    );
-                  }
-                },
-                child: Text(
-                  "Continue",
-                  style: TextStyle(
-                    fontSize: 18,
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
+                    ),
+                    SizedBox(height: 16),
+
+                    // State
+                    Text(
+                      "State:",
+                      style: TextStyle(fontSize: 14, color: Colors.black87),
+                    ),
+                    SizedBox(height: 4),
+                    CustomDropdown<String>.search(
+                      hintText: "Select State",
+                      items: stateOptions,
+                      initialItem: selectedState,
+                      onChanged: (value) {
+                        setState(() => selectedState = value);
+                      },
+                      decoration: CustomDropdownDecoration(
+                        closedBorder: Border.all(color: Colors.grey.shade400),
+                        closedBorderRadius: BorderRadius.circular(9),
+                        expandedBorder: Border.all(
+                          color: Colors.blueAccent,
+                        ), // when opened
+                        expandedBorderRadius: BorderRadius.circular(9),
+                        hintStyle: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 16),
+
+                    // City
+                    Text(
+                      "City:",
+                      style: TextStyle(fontSize: 14, color: Colors.black87),
+                    ),
+                    SizedBox(height: 4),
+                    CustomDropdown<String>.search(
+                      hintText: "Select City",
+                      items: cities,
+                      initialItem: city,
+                      onChanged: (value) {
+                        setState(() => city = value);
+                      },
+                      decoration: CustomDropdownDecoration(
+                        closedBorder: Border.all(color: Colors.grey.shade400),
+                        closedBorderRadius: BorderRadius.circular(9),
+                        expandedBorder: Border.all(
+                          color: Colors.blueAccent,
+                        ), // when opened
+                        expandedBorderRadius: BorderRadius.circular(9),
+                        hintStyle: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                // District
+                Text(
+                  "District:",
+                  style: TextStyle(fontSize: 14, color: Colors.black87),
+                ),
+                SizedBox(height: 4),
+                TextField(
+                  controller: districtController,
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 14,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(9),
+                      borderSide: BorderSide(color: Colors.grey.shade400),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(9),
+                      borderSide: BorderSide(color: Colors.grey.shade400),
+                    ),
                   ),
                 ),
-              ),
+                SizedBox(height: 16),
+
+                // Street / House / Flat
+                Text(
+                  "Street / House / Flat:",
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black87,
+                  ),
+                ),
+                SizedBox(height: 4),
+                TextField(
+                  controller: address1Controller,
+                  decoration: InputDecoration(
+                    hintText: "Enter street name, house no, or apartment",
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 14,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(9),
+                      borderSide: BorderSide(color: Colors.grey.shade400),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(9),
+                      borderSide: BorderSide(color: Colors.grey.shade400),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 16),
+
+                // Landmark / Area / Locality
+                Text(
+                  "Landmark / Area / Locality:",
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black87,
+                  ),
+                ),
+                SizedBox(height: 4),
+                TextField(
+                  controller: address2Controller,
+                  decoration: InputDecoration(
+                    hintText: "E.g. Near Bus Stand, Opposite School",
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 14,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(9),
+                      borderSide: BorderSide(color: Colors.grey.shade400),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(9),
+                      borderSide: BorderSide(color: Colors.grey.shade400),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 16),
+
+                // Pincode
+                Text(
+                  "Pincode:",
+                  style: TextStyle(fontSize: 14, color: Colors.black87),
+                ),
+                SizedBox(height: 4),
+                TextField(
+                  controller: pincodeController,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 14,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(9),
+                      borderSide: BorderSide(color: Colors.grey.shade400),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(9),
+                      borderSide: BorderSide(color: Colors.grey.shade400),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 16),
+
+                // SizedBox(height: 30),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: pinkColor,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      elevation: 4,
+                      shadowColor: Colors.black26,
+                    ),
+                    onPressed: () {
+                      if (_validateForm()) {
+                        widget.userData.higherEducation =
+                            educationController.text;
+                        widget.userData.employeeIn = employedInController.text;
+                        widget.userData.occupation = occupationController.text;
+                        widget.userData.annualIncome =
+                            annualIncomeController.text;
+                        widget.userData.workLocation = workLocation;
+                        widget.userData.state = selectedState;
+                        widget.userData.city = city;
+                        widget.userData.district = districtController.text;
+                        widget.userData.addressLane1 = address1Controller.text;
+                        widget.userData.addressLane2 = address2Controller.text;
+                        widget.userData.pincode = pincodeController.text;
+
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder:
+                                (context) => AboutYourselfScreen(
+                                  userData: widget.userData,
+                                  mobile: '',
+                                ),
+                          ),
+                        );
+                      }
+                    },
+                    child: Text(
+                      "Continue",
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 30),
+              ],
             ),
-            SizedBox(height: 30),
           ],
         ),
       ),
@@ -442,7 +598,11 @@ class _ProfessionalDetailsScreenState extends State<ProfessionalDetailsScreen> {
         annualIncomeController.text.isEmpty ||
         workLocation == null ||
         selectedState == null ||
-        city == null) {
+        city == null ||
+        districtController.text.isEmpty ||
+        address1Controller.text.isEmpty ||
+        address2Controller.text.isEmpty ||
+        pincodeController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Please fill all required fields')),
       );

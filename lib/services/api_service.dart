@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:matrimony/models/ProfileView.dart';
+import 'package:matrimony/models/user_data.dart';
 
 class ApiService {
   static const String baseUrl =
@@ -302,7 +303,11 @@ class ApiService {
         final data = json.decode(response.body);
 
         if (data['status'] == 'success') {
-          return {'success': true, 'user_data': data['user_data']};
+          return {
+            'success': true,
+            'user_data': data['user_data'],
+            'badge': data['badge'],
+          };
         } else {
           return {'success': false, 'error': 'Profile not found'};
         }
@@ -311,6 +316,160 @@ class ApiService {
       }
     } catch (e) {
       return {'success': false, 'error': 'Network error: $e'};
+    }
+  }
+
+  //Update Profile Method
+  static Future<Map<String, dynamic>> updateProfile(UserData user) async {
+    final apiUrl =
+        "https://pheonixconstructions.com/Matrimony API/profile_update.php";
+
+    try {
+      // Only send allowed fields, but include user_id
+      final Map<String, String> params = {
+        "user_id": user.userId?.toString() ?? '', // ✅ Required
+        "name": user.name != null ? Uri.encodeQueryComponent(user.name!) : '',
+        "email_id":
+            user.emailId != null ? Uri.encodeQueryComponent(user.emailId!) : '',
+        "dob": user.dob != null ? Uri.encodeQueryComponent(user.dob!) : '',
+        "age": user.age ?? '',
+        "gender":
+            user.gender != null ? Uri.encodeQueryComponent(user.gender!) : '',
+        "religion":
+            user.religion != null
+                ? Uri.encodeQueryComponent(user.religion!)
+                : '',
+        "inter_caste":
+            user.interCaste != null
+                ? Uri.encodeQueryComponent(user.interCaste!)
+                : '',
+        "caste":
+            user.caste != null ? Uri.encodeQueryComponent(user.caste!) : '',
+        "sub_caste":
+            user.subCaste != null
+                ? Uri.encodeQueryComponent(user.subCaste!)
+                : '',
+        "dosham":
+            user.dosham != null ? Uri.encodeQueryComponent(user.dosham!) : '',
+        "higher_education":
+            user.higherEducation != null
+                ? Uri.encodeQueryComponent(user.higherEducation!)
+                : '',
+        "employee_in":
+            user.employeeIn != null
+                ? Uri.encodeQueryComponent(user.employeeIn!)
+                : '',
+        "occupation":
+            user.occupation != null
+                ? Uri.encodeQueryComponent(user.occupation!)
+                : '',
+        "annual_income": user.annualIncome ?? '',
+        "work_location":
+            user.workLocation != null
+                ? Uri.encodeQueryComponent(user.workLocation!)
+                : '',
+        "state":
+            user.state != null ? Uri.encodeQueryComponent(user.state!) : '',
+        "city": user.city != null ? Uri.encodeQueryComponent(user.city!) : '',
+        "about_yourself":
+            user.aboutYourself != null
+                ? Uri.encodeQueryComponent(user.aboutYourself!)
+                : '',
+        "marital_status":
+            user.maritalStatus != null
+                ? Uri.encodeQueryComponent(user.maritalStatus!)
+                : '',
+        "skin_color":
+            user.skinColor != null
+                ? Uri.encodeQueryComponent(user.skinColor!)
+                : '',
+        "height": user.height ?? '',
+        "weight": user.weight ?? '',
+        "physical_status": user.physicalStatus ?? '',
+        "financial_status": user.financialStatus ?? '',
+        "district":
+            user.district != null
+                ? Uri.encodeQueryComponent(user.district!)
+                : '',
+        "address_lane1":
+            user.addressLane1 != null
+                ? Uri.encodeQueryComponent(user.addressLane1!)
+                : '',
+        "address_lane2":
+            user.addressLane2 != null
+                ? Uri.encodeQueryComponent(user.addressLane2!)
+                : '',
+        "pincode": user.pincode ?? '',
+        "father_name":
+            user.fatherName != null
+                ? Uri.encodeQueryComponent(user.fatherName!)
+                : '',
+        "mother_name":
+            user.motherName != null
+                ? Uri.encodeQueryComponent(user.motherName!)
+                : '',
+        "siblings":
+            user.siblings != null
+                ? Uri.encodeQueryComponent(user.siblings!)
+                : '',
+        "native_place":
+            user.nativePlace != null
+                ? Uri.encodeQueryComponent(user.nativePlace!)
+                : '',
+        "mother_tongue":
+            user.motherTongue != null
+                ? Uri.encodeQueryComponent(user.motherTongue!)
+                : '',
+        "hobbies":
+            user.diet != null ? Uri.encodeQueryComponent(user.diet!) : '',
+        "interests":
+            user.hobbies != null ? Uri.encodeQueryComponent(user.hobbies!) : '',
+        "diet":
+            user.interests != null
+                ? Uri.encodeQueryComponent(user.interests!)
+                : '',
+        "profileFor":
+            user.profileFor != null
+                ? Uri.encodeQueryComponent(user.profileFor!)
+                : '',
+        "profile_img": user.profileImg ?? '',
+        "profile_img_path": user.profileImgPath ?? '',
+        "aadhar_img_path": user.aadharImgPath ?? '',
+        "community_certificate_path": user.communityCertificatePath ?? '',
+        "jathakam_path": user.jathakamPath ?? '',
+        "badge": user.badge ?? '',
+        "user_sts": (user.isActive == true) ? "0" : "1",
+      };
+
+      // Do NOT include contact_no or anything else forbidden
+      params.remove('contact_no');
+
+      // Build URI with encoded query parameters
+      final uri = Uri.parse(apiUrl).replace(queryParameters: params);
+
+      final response = await http.get(uri);
+
+      print("HTTP status: ${response.statusCode}");
+      print("HTTP body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        try {
+          final data = json.decode(response.body);
+          return data as Map<String, dynamic>;
+        } catch (e) {
+          print("JSON decode error: $e");
+          return {"success": false, "message": "Invalid JSON response"};
+        }
+      } else {
+        return {
+          "success": false,
+          "message": "Server error: ${response.statusCode}",
+        };
+      }
+    } catch (e, stack) {
+      print("Exception in updateProfile: $e");
+      print(stack);
+      return {"success": false, "message": "Network error: $e"};
     }
   }
 

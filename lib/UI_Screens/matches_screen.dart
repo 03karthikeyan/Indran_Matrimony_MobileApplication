@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:matrimony/UI_Screens/filter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'matches_details_screen.dart';
@@ -43,44 +46,67 @@ class _MatchesScreenState extends State<MatchesScreen> {
   Future<void> _loadMatches() async {
     setState(() => isLoading = true);
 
-    final result =
-        currentFilters.isEmpty
-            ? await ApiService.getMatchingProfiles(userId!)
-            : await ApiService.getFilteredMatches(
-              userId!,
-              fromAge: currentFilters['from_age'],
-              toAge: currentFilters['to_age'],
-              higherEducation: currentFilters['higher_education'],
-              employeeIn: currentFilters['employee_in'],
-              city: currentFilters['city'],
-              fromIncome: currentFilters['from_income'],
-              toIncome: currentFilters['to_income'],
-            );
+    try {
+      Uri uri;
 
-    if (result['success'] && mounted) {
-      final data = result['data'];
-      final matchesList = List<Map<String, dynamic>>.from(
-        data['matches'] ?? [],
-      );
-      totalMatches = data['total_matches'] ?? 0;
+      if (currentFilters.isEmpty) {
+        // Load all matches
+        uri = Uri.parse(
+          'https://pheonixconstructions.com/Matrimony%20API/incomebased_record.php?user_id=$userId',
+        );
+      } else {
+        // Apply filters
+        uri = Uri.parse(
+          'https://pheonixconstructions.com/Matrimony%20API/incomebased_record.php'
+          '?user_id=$userId'
+          '&from_age=${currentFilters['from_age'] ?? ''}'
+          '&to_age=${currentFilters['to_age'] ?? ''}'
+          '&higher_education=${currentFilters['higher_education'] ?? ''}'
+          '&employee_in=${currentFilters['employee_in'] ?? ''}'
+          '&city=${currentFilters['city'] ?? ''}'
+          '&from_income=${currentFilters['from_income'] ?? ''}'
+          '&to_income=${currentFilters['to_income'] ?? ''}',
+        );
+      }
 
-      // Add match percentage for each user
-      final updatedMatches = await Future.wait(
-        matchesList.map<Future<Map<String, dynamic>>>((match) async {
-          final matchPercent = await MatchStorage.getMatchPercentage(
-            match['user_id'],
+      final response = await http.get(uri);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        if (data['status'] == 'success') {
+          final matchesList = List<Map<String, dynamic>>.from(
+            data['matches'] ?? [],
           );
-          match['matchPercent'] = matchPercent;
-          return match;
-        }).toList(),
-      ); // ✅ convert to List
 
-      setState(() {
-        matches = updatedMatches;
-        isLoading = false;
-      });
-    } else if (mounted) {
+          totalMatches = data['total_matches'] ?? matchesList.length;
+
+          // Optional: Add match percentage
+          final updatedMatches = await Future.wait(
+            matchesList.map<Future<Map<String, dynamic>>>((match) async {
+              final matchPercent = await MatchStorage.getMatchPercentage(
+                match['user_id'],
+              );
+              match['matchPercent'] = matchPercent;
+              return match;
+            }).toList(),
+          );
+
+          setState(() {
+            matches = updatedMatches;
+            isLoading = false;
+          });
+        } else {
+          setState(() => isLoading = false);
+          print("API returned failure: ${data['status']}");
+        }
+      } else {
+        setState(() => isLoading = false);
+        print("HTTP request failed: ${response.statusCode}");
+      }
+    } catch (e) {
       setState(() => isLoading = false);
+      print("Error fetching matches: $e");
     }
   }
 

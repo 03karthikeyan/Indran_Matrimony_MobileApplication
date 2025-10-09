@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:matrimony/UI_Screens/matches_details_screen.dart';
 import 'package:matrimony/models/ProfileView.dart';
 import 'package:shimmer/shimmer.dart';
 
@@ -116,79 +117,69 @@ class ProfileListScreen extends StatelessWidget {
                   leading: CircleAvatar(
                     radius: 32,
                     backgroundImage:
-                        profile.image != null
-                            ? NetworkImage(profile.image!)
-                            : const AssetImage("assets/onboarding_bg.png")
+                        (profile.image != null &&
+                                profile.image!.isNotEmpty &&
+                                profile.image != 'default.jpg')
+                            ? NetworkImage(
+                              "https://pheonixconstructions.com/assets/profile_image/${profile.image}",
+                            ) // Replace with your actual image base URL
+                            : const AssetImage("assets/Ellipse 222.png")
                                 as ImageProvider,
                   ),
 
                   // ✅ Dynamic title/subtitle
-                  title:
-                      isWhoViewed
-                          ? Text(
-                            "User ID: ${profile.userId}",
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          )
-                          : Text(
-                            profile.name,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
+                  title: Text(
+                    isWhoViewed
+                        ? (profile.username ?? "User-${profile.username}")
+                        : profile.name ?? "Unknown",
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
                   subtitle: Padding(
                     padding: const EdgeInsets.only(top: 4),
-                    child:
-                        isWhoViewed
-                            ? Text(
-                              "${profile.gender} • Views: ${profile.totalViews}\nLast Viewed: ${profile.lastViewedAt}",
-                              style: const TextStyle(
-                                fontSize: 13,
-                                color: Colors.black54,
-                              ),
-                            )
-                            : Text(
-                              "${profile.gender ?? ''} • ${profile.occupation ?? ''}\n${profile.city ?? ''}, ${profile.state ?? ''}",
-                              style: const TextStyle(
-                                fontSize: 13,
-                                color: Colors.black54,
-                              ),
-                            ),
-                  ),
-
-                  trailing: ElevatedButton(
-                    onPressed: () {
-                      // Navigator.push(
-                      //   context,
-                      //   MaterialPageRoute(
-                      //     builder:
-                      //         (_) => MatchesDetailsScreen(
-                      //           match: {
-                      //             "profile_id": profile.profileId,
-                      //             "user_id": profile.userId,
-                      //             "gender": profile.gender,
-                      //             "image": profile.image,
-                      //             "last_viewed_at": profile.lastViewedAt,
-                      //             "total_views": profile.totalViews,
-                      //           },
-                      //         ),
-                      //   ),
-                      // );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.pink.shade600,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                    child: Text(
+                      isWhoViewed
+                          ? "${profile.gender ?? ''} • Views: ${profile.totalViews}\nLast Viewed: ${profile.lastViewedAt ?? '-'}"
+                          : "${profile.gender ?? ''} • ${profile.occupation ?? ''}\n${profile.city ?? ''}, ${profile.state ?? ''}",
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Colors.black54,
                       ),
                     ),
-                    child: const Text(
-                      "View",
-                      style: TextStyle(fontSize: 13, color: Colors.white),
-                    ),
                   ),
+
+                  // trailing: ElevatedButton(
+                  //   onPressed: () {
+                  //     Navigator.push(
+                  //       context,
+                  //       MaterialPageRoute(
+                  //         builder:
+                  //             (_) => MatchesDetailsScreen(
+                  //               match: {
+                  //                 "profile_id": profile.profileId,
+                  //                 "user_id": profile.userId,
+                  //                 "gender": profile.gender,
+                  //                 "image": profile.image,
+                  //                 "last_viewed_at": profile.lastViewedAt,
+                  //                 "total_views": profile.totalViews,
+                  //               },
+                  //             ),
+                  //       ),
+                  //     );
+                  //   },
+                  //   style: ElevatedButton.styleFrom(
+                  //     backgroundColor: Colors.pink.shade600,
+                  //     shape: RoundedRectangleBorder(
+                  //       borderRadius: BorderRadius.circular(8),
+                  //     ),
+                  //   ),
+                  //   child: const Text(
+                  //     "View",
+                  //     style: TextStyle(fontSize: 13, color: Colors.white),
+                  //   ),
+                  // ),
                 ),
               );
             },

@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:matrimony/UI_Screens/EditProfileScreen.dart';
+import 'package:matrimony/UI_Screens/KYC_Uploads.dart';
 import 'package:matrimony/UI_Screens/Personal_Imformation.dart';
 import 'package:matrimony/UI_Screens/help_support.dart';
 import 'package:matrimony/UI_Screens/interests_received_screen.dart';
@@ -24,6 +25,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Map<String, dynamic>? userData;
   bool isLoading = true;
   bool isActive = true;
+  String _selectedLanguage = 'en'; // default English
 
   // Subscription
   bool isSubscribed = false;
@@ -177,6 +179,83 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return (filled / fields.length) * 100;
   }
 
+  //Language selector
+
+  void _showLanguageSelector() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        String selectedLang = _selectedLanguage; // local copy
+        return StatefulBuilder(
+          builder:
+              (context, innerSetState) => Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      "Select Language",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.pink[800],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _languageCard(
+                          label: "English",
+                          isSelected: selectedLang == 'en',
+                          onTap: () => innerSetState(() => selectedLang = 'en'),
+                        ),
+                        _languageCard(
+                          label: "தமிழ்",
+                          isSelected: selectedLang == 'ta',
+                          onTap: () => innerSetState(() => selectedLang = 'ta'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          // ✅ update main state so the UI refreshes
+                          setState(() {
+                            _selectedLanguage = selectedLang;
+                          });
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.pink[700],
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          "Confirm",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final pinkColor = const Color(0xFFA51C48);
@@ -190,99 +269,210 @@ class _ProfileScreenState extends State<ProfileScreen> {
           physics: const AlwaysScrollableScrollPhysics(),
           child: Column(
             children: [
-              // Header
+              // Enhanced Header
               Container(
                 padding: const EdgeInsets.only(
-                  top: 44,
+                  top: 40,
                   left: 18,
                   right: 18,
                   bottom: 20,
                 ),
                 decoration: BoxDecoration(
-                  color: pinkColor,
+                  gradient: LinearGradient(
+                    colors: [pinkColor.withOpacity(0.9), pinkColor],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                   borderRadius: const BorderRadius.vertical(
                     bottom: Radius.circular(24),
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black26,
+                      blurRadius: 6,
+                      offset: Offset(0, 3),
+                    ),
+                  ],
                 ),
                 child: Column(
                   children: [
+                    // Top Row: Title + Premium Badge + Language
                     Row(
                       children: [
-                        const Text(
-                          'My Profile',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
+                        Flexible(
+                          child: Text(
+                            profileLabels[_selectedLanguage]!['my_profile'] ??
+                                "My Profile",
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 17,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        const Spacer(),
+                        const SizedBox(width: 10),
+
+                        // Premium Badge
                         if (isSubscribed)
                           Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
+                              horizontal: 12,
                               vertical: 5,
                             ),
                             decoration: BoxDecoration(
                               color: Colors.amber,
                               borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black26,
+                                  blurRadius: 4,
+                                  offset: Offset(0, 2),
+                                ),
+                              ],
                             ),
-                            child: const Text(
-                              "Premium",
-                              style: TextStyle(
-                                color: Colors.black,
-                                fontWeight: FontWeight.bold,
-                              ),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.workspace_premium,
+                                  size: 16,
+                                  color: Colors.black,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  profileLabels[_selectedLanguage]!['premium'] ??
+                                      "Premium",
+                                  style: const TextStyle(
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        IconButton(
-                          icon: const Icon(Icons.edit, color: Colors.white),
-                          onPressed: () async {
-                            if (userData != null) {
-                              final updated = await Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder:
-                                      (_) => EditProfileScreen(
-                                        userId: widget.userId,
-                                        profileData: userData!,
-                                      ),
+
+                        if (isSubscribed) const SizedBox(width: 8),
+
+                        // Language Selector
+                        GestureDetector(
+                          onTap: _showLanguageSelector,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.language,
+                                  color: Colors.white,
+                                  size: 20,
                                 ),
-                              );
-                              if (updated == true) fetchProfile();
-                            }
-                          },
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    Stack(
-                      alignment: Alignment.bottomRight,
-                      children: [
-                        CircleAvatar(
-                          radius: 50,
-                          backgroundImage:
-                              (userData?['profile_img'] != null &&
-                                      userData!['profile_img']
-                                          .toString()
-                                          .isNotEmpty)
-                                  ? NetworkImage(userData!['profile_img'])
-                                  : const AssetImage('assets/Ellipse222(1).png')
-                                      as ImageProvider,
+                                const SizedBox(width: 4),
+                                Text(
+                                  _selectedLanguage == 'en' ? 'EN' : 'தமிழ்',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ],
                     ),
 
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 22),
+
+                    // Profile Avatar with border and shadow
+                    Stack(
+                      alignment: Alignment.bottomRight,
+                      children: [
+                        Container(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black26,
+                                blurRadius: 6,
+                                offset: Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: CircleAvatar(
+                            radius: 52,
+                            backgroundColor: Colors.white,
+                            child: CircleAvatar(
+                              radius: 50,
+                              backgroundImage:
+                                  (userData?['profile_img_path'] != null &&
+                                          userData!['profile_img_path']
+                                              .toString()
+                                              .isNotEmpty)
+                                      ? NetworkImage(
+                                        userData!['profile_img_path'],
+                                      )
+                                      : const AssetImage(
+                                            'assets/Ellipse222(1).png',
+                                          )
+                                          as ImageProvider,
+                            ),
+                          ),
+                        ),
+
+                        // Optional: Premium overlay icon
+                        if (isSubscribed)
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: Colors.amber,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 2,
+                                ),
+                              ),
+                              child: const Icon(
+                                Icons.workspace_premium,
+                                size: 16,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 14),
+
+                    // Name
                     Text(
                       userData?['name'] ?? "Unknown User",
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 18,
+                        fontSize: 20,
                         fontWeight: FontWeight.bold,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black26,
+                            blurRadius: 3,
+                            offset: Offset(0, 1),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 6),
+
+                    // Membership Row
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -291,17 +481,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           size: 16,
                           color: isSubscribed ? Colors.green : Colors.white70,
                         ),
-
-                        const SizedBox(width: 4),
+                        const SizedBox(width: 6),
                         Text(
-                          isSubscribed ? 'Premium Member' : 'Free Member',
+                          isSubscribed
+                              ? profileLabels[_selectedLanguage]!['premium_member'] ??
+                                  "Premium Member"
+                              : profileLabels[_selectedLanguage]!['free_member'] ??
+                                  "Free Member",
                           style: const TextStyle(
                             color: Colors.white70,
                             fontSize: 14,
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        if (!isSubscribed)
+                        if (!isSubscribed) ...[
+                          const SizedBox(width: 10),
                           GestureDetector(
                             onTap: () {
                               Navigator.push(
@@ -313,23 +506,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             },
                             child: Container(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
+                                horizontal: 10,
+                                vertical: 5,
                               ),
                               decoration: BoxDecoration(
                                 color: Colors.white,
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(14),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black26,
+                                    blurRadius: 3,
+                                    offset: Offset(0, 2),
+                                  ),
+                                ],
                               ),
                               child: Text(
                                 "Upgrade",
                                 style: TextStyle(
                                   color: pinkColor,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
                                 ),
                               ),
                             ),
                           ),
+                        ],
                       ],
                     ),
                   ],
@@ -354,8 +555,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   children: [
                     Row(
                       children: [
-                        const Text(
-                          "Profile Completion",
+                        Text(
+                          profileLabels[_selectedLanguage]!['profile_completion'] ??
+                              "Profile Completion",
                           style: TextStyle(
                             fontWeight: FontWeight.w600,
                             fontSize: 16,
@@ -392,7 +594,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               // Menu
               _MenuItem(
                 icon: Icons.person,
-                title: 'Personal Details',
+                title: profileLabels[_selectedLanguage]!['personal_details']!,
                 onTap: () async {
                   // Fetch user profile dynamically
                   final result = await ApiService.getProfiles(widget.userId);
@@ -444,7 +646,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               _MenuItem(
                 icon: Icons.favorite,
-                title: 'Interests Received',
+                title: profileLabels[_selectedLanguage]!['interests_received']!,
                 onTap:
                     () => Navigator.push(
                       context,
@@ -453,17 +655,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ),
               ),
-              // _MenuItem(
-              //   icon: Icons.history,
-              //   title: 'Profile Insights',
-              //   onTap:
-              //       () => Navigator.push(
-              //         context,
-              //         MaterialPageRoute(
-              //           builder: (_) => const ProfileInsightsScreen(),
-              //         ),
-              //       ),
-              // ),
+              _MenuItem(
+                icon: Icons.history,
+                title: profileLabels[_selectedLanguage]!['kyc_uploads']!,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => KycUploadScreen()),
+                  );
+                },
+              ),
+
               // _MenuItem(
               //   icon: Icons.photo_library,
               //   title: 'Photo Gallery',
@@ -477,7 +679,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               // ),
               _MenuItem(
                 icon: Icons.workspace_premium,
-                title: 'Subscription',
+                title: profileLabels[_selectedLanguage]!['subscription']!,
                 onTap:
                     () => Navigator.push(
                       context,
@@ -493,7 +695,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               // ),
               _MenuItem(
                 icon: Icons.privacy_tip,
-                title: 'Privacy Settings',
+                title: profileLabels[_selectedLanguage]!['privacy_settings']!,
                 onTap:
                     () => Navigator.push(
                       context,
@@ -504,7 +706,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               _MenuItem(
                 icon: Icons.help,
-                title: 'Help & Support',
+                title: profileLabels[_selectedLanguage]!['help_support']!,
                 onTap:
                     () => Navigator.push(
                       context,
@@ -516,7 +718,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
               _MenuItem(
                 icon: Icons.logout,
-                title: 'Logout',
+                title: profileLabels[_selectedLanguage]!['logout']!,
                 onTap: () async {
                   showDialog(
                     context: context,
@@ -558,6 +760,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               const SizedBox(height: 20),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _languageCard({
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 25),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.pink[100] : Colors.grey[100],
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected ? Colors.pink : Colors.grey.shade300,
+            width: isSelected ? 2 : 1,
+          ),
+          boxShadow: [
+            if (isSelected)
+              BoxShadow(
+                color: Colors.pink.withOpacity(0.3),
+                blurRadius: 10,
+                offset: const Offset(0, 5),
+              ),
+          ],
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: isSelected ? Colors.pink[800] : Colors.black87,
           ),
         ),
       ),
@@ -612,3 +852,42 @@ class _MenuItem extends StatelessWidget {
     );
   }
 }
+
+// menu labels in both languages
+
+Map<String, Map<String, String>> profileLabels = {
+  'en': {
+    'personal_details': 'Personal Details',
+    'interests_received': 'Interests Received',
+    'kyc_uploads': 'KYC Uploads',
+    'subscription': 'Subscription',
+    'privacy_settings': 'Privacy Settings',
+    'help_support': 'Help & Support',
+    'logout': 'Logout',
+    'upgrade': 'Upgrade',
+    'my_profile': 'My Profile',
+    'free_member': 'Free Member',
+    'premium_member': 'Premium Member',
+    'profile_completion': 'Profile Completion',
+    'premium': 'Premium',
+    'complete your profile to get more matches':
+        'Complete your profile to get more matches',
+  },
+  'ta': {
+    'personal_details': 'தனிப்பட்ட தகவல்கள்',
+    'interests_received': 'வேண்டிய ஆர்வங்கள்',
+    'kyc_uploads': 'KYC பதிவேற்றங்கள்',
+    'subscription': 'சந்தா',
+    'privacy_settings': 'தனியுரிமை அமைப்புகள்',
+    'help_support': 'உதவி மற்றும் ஆதரவு',
+    'logout': 'வெளியேறு',
+    'upgrade': 'மேம்படுத்தவும்',
+    'my_profile': 'என் ப்ரொஃபைல்',
+    'free_member': 'இலவச உறுப்பினர்',
+    'premium_member': 'ப்ரீமியம் உறுப்பினர்',
+    'profile_completion': 'ப்ரொஃபைல் நிறைவு',
+    'premium': 'ப்ரீமியம்',
+    'complete your profile to get more matches':
+        'மேலும் பொருத்தங்களை பெற உங்கள் ப்ரொஃபைலை முழுமையாக்கவும்',
+  },
+};

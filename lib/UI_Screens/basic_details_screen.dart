@@ -17,6 +17,12 @@ class BasicDetailsScreen extends StatefulWidget {
 class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
   String? gender;
   String? profileFor;
+  String? martialFor;
+  String? skinFor;
+  String? physicalFor;
+  String? financialFor;
+  final UserData userData = UserData();
+
   final profileOptions = [
     'Self',
     'Son',
@@ -26,11 +32,18 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
     'Friend',
     'Relative',
   ];
+  final martialOptions = ["Unmarried", "Married", "Divorced", "Widowed"];
+  final skinOptions = ["Fair", "Wheatish", "Dark"];
+  final physicalOptions = ["Fit", "Physically Challenged"];
+  final financialOptions = ["Stable", "Moderate", "Wealthy"];
   final TextEditingController nameController = TextEditingController();
   final TextEditingController mobileController = TextEditingController();
   final TextEditingController dobController = TextEditingController();
   final TextEditingController ageController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
+
+  final TextEditingController heightController = TextEditingController();
+  final TextEditingController weightController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -449,6 +462,294 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
                 return null;
               },
             ),
+
+            // Marital Status
+            Text(
+              "Marital Status:",
+              style: TextStyle(fontSize: 14, color: Colors.black87),
+            ),
+            SizedBox(height: 6),
+            CustomDropdown<String>(
+              hintText: "Select",
+              items: martialOptions,
+              initialItem: martialFor,
+              decoration: CustomDropdownDecoration(
+                closedFillColor: Colors.white,
+                expandedFillColor: Colors.white,
+                closedBorder: Border.all(color: Colors.grey.shade400),
+                expandedBorder: Border.all(color: Colors.grey.shade600),
+                closedBorderRadius: BorderRadius.circular(9),
+                expandedBorderRadius: BorderRadius.circular(9),
+                hintStyle: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                listItemStyle: const TextStyle(
+                  fontSize: 14,
+                  color: Colors.black87,
+                ),
+                closedSuffixIcon: Icon(
+                  Icons.arrow_drop_down,
+                  color: Colors.black54,
+                ),
+                expandedSuffixIcon: Icon(
+                  Icons.arrow_drop_up,
+                  color: Colors.black54,
+                ),
+              ),
+              onChanged: (value) {
+                setState(() => martialFor = value);
+              },
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return "Please select a Martial status type";
+                }
+                return null;
+              },
+            ),
+
+            // CustomDropdown<String>(
+            //   hintText: "Select",
+            //   items: ["Unmarried", "Married", "Divorced", "Widowed"],
+            //   initialItem: null,
+            //   onChanged:
+            //       (value) => setState(() => userData.maritalStatus = value),
+            // ),
+            SizedBox(height: 16),
+
+            // Skin Color
+            Text(
+              "Skin Color:",
+              style: TextStyle(fontSize: 14, color: Colors.black87),
+            ),
+            SizedBox(height: 6),
+            CustomDropdown<String>(
+              hintText: "Select",
+              items: skinOptions,
+              initialItem: skinFor,
+              decoration: CustomDropdownDecoration(
+                closedFillColor: Colors.white,
+                expandedFillColor: Colors.white,
+                closedBorder: Border.all(color: Colors.grey.shade400),
+                expandedBorder: Border.all(color: Colors.grey.shade600),
+                closedBorderRadius: BorderRadius.circular(9),
+                expandedBorderRadius: BorderRadius.circular(9),
+                hintStyle: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                listItemStyle: const TextStyle(
+                  fontSize: 14,
+                  color: Colors.black87,
+                ),
+                closedSuffixIcon: Icon(
+                  Icons.arrow_drop_down,
+                  color: Colors.black54,
+                ),
+                expandedSuffixIcon: Icon(
+                  Icons.arrow_drop_up,
+                  color: Colors.black54,
+                ),
+              ),
+              onChanged: (value) {
+                setState(() => skinFor = value);
+              },
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return "Please select a Skin type";
+                }
+                return null;
+              },
+            ),
+
+            // CustomDropdown<String>(
+            //   hintText: "Select",
+            //   items: ["Fair", "Wheatish", "Dark"],
+            //   initialItem: null,
+            //   onChanged: (value) => setState(() => userData.skinColor = value),
+            // ),
+            SizedBox(height: 16),
+
+            // Height
+            Text(
+              "Height (in cm):",
+              style: TextStyle(fontSize: 14, color: Colors.black87),
+            ),
+            SizedBox(height: 4),
+            TextField(
+              controller: heightController,
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: Colors.white,
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 14,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(9),
+                  borderSide: BorderSide(color: Colors.grey.shade400),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(9),
+                  borderSide: BorderSide(color: Colors.grey.shade400),
+                ),
+              ),
+            ),
+            Text(
+              "Height (in cm):",
+              style: TextStyle(fontSize: 14, color: Colors.black87),
+            ),
+
+            // SizedBox(height: 4),
+            // TextField(
+            //   decoration: InputDecoration(
+            //     hintText: "Enter height",
+            //     border: OutlineInputBorder(
+            //       borderRadius: BorderRadius.circular(9),
+            //     ),
+            //   ),
+            //   keyboardType: TextInputType.number,
+            //   onChanged: (value) => userData.height = value,
+            // ),
+            SizedBox(height: 16),
+
+            // Weight
+            Text(
+              "Weight (in kg):",
+              style: TextStyle(fontSize: 14, color: Colors.black87),
+            ),
+            SizedBox(height: 4),
+            TextField(
+              controller: weightController,
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: Colors.white,
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 14,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(9),
+                  borderSide: BorderSide(color: Colors.grey.shade400),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(9),
+                  borderSide: BorderSide(color: Colors.grey.shade400),
+                ),
+              ),
+            ),
+
+            // Text(
+            //   "Weight (in kg):",
+            //   style: TextStyle(fontSize: 14, color: Colors.black87),
+            // ),
+            // SizedBox(height: 4),
+            // TextField(
+            //   decoration: InputDecoration(
+            //     hintText: "Enter weight",
+            //     border: OutlineInputBorder(
+            //       borderRadius: BorderRadius.circular(9),
+            //     ),
+            //   ),
+            //   keyboardType: TextInputType.number,
+            //   onChanged: (value) => userData.weight = value,
+            // ),
+            SizedBox(height: 16),
+
+            // Physical Status
+            Text(
+              "Physical Status:",
+              style: TextStyle(fontSize: 14, color: Colors.black87),
+            ),
+            SizedBox(height: 6),
+            CustomDropdown<String>(
+              hintText: "Select",
+              items: physicalOptions,
+              initialItem: physicalFor,
+              decoration: CustomDropdownDecoration(
+                closedFillColor: Colors.white,
+                expandedFillColor: Colors.white,
+                closedBorder: Border.all(color: Colors.grey.shade400),
+                expandedBorder: Border.all(color: Colors.grey.shade600),
+                closedBorderRadius: BorderRadius.circular(9),
+                expandedBorderRadius: BorderRadius.circular(9),
+                hintStyle: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                listItemStyle: const TextStyle(
+                  fontSize: 14,
+                  color: Colors.black87,
+                ),
+                closedSuffixIcon: Icon(
+                  Icons.arrow_drop_down,
+                  color: Colors.black54,
+                ),
+                expandedSuffixIcon: Icon(
+                  Icons.arrow_drop_up,
+                  color: Colors.black54,
+                ),
+              ),
+              onChanged: (value) {
+                setState(() => physicalFor = value);
+              },
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return "Please select a Physically type";
+                }
+                return null;
+              },
+            ),
+
+            // CustomDropdown<String>(
+            //   hintText: "Select",
+            //   items: ["Fit", "Physically Challenged"],
+            //   initialItem: null,
+            //   onChanged:
+            //       (value) => setState(() => userData.physicalStatus = value),
+            // ),
+            SizedBox(height: 16),
+
+            // Financial Status
+            Text(
+              "Financial Status:",
+              style: TextStyle(fontSize: 14, color: Colors.black87),
+            ),
+            SizedBox(height: 6),
+            CustomDropdown<String>(
+              hintText: "Select",
+              items: financialOptions,
+              initialItem: financialFor,
+              decoration: CustomDropdownDecoration(
+                closedFillColor: Colors.white,
+                expandedFillColor: Colors.white,
+                closedBorder: Border.all(color: Colors.grey.shade400),
+                expandedBorder: Border.all(color: Colors.grey.shade600),
+                closedBorderRadius: BorderRadius.circular(9),
+                expandedBorderRadius: BorderRadius.circular(9),
+                hintStyle: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                listItemStyle: const TextStyle(
+                  fontSize: 14,
+                  color: Colors.black87,
+                ),
+                closedSuffixIcon: Icon(
+                  Icons.arrow_drop_down,
+                  color: Colors.black54,
+                ),
+                expandedSuffixIcon: Icon(
+                  Icons.arrow_drop_up,
+                  color: Colors.black54,
+                ),
+              ),
+              onChanged: (value) {
+                setState(() => financialFor = value);
+              },
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return "Please select a Financial type";
+                }
+                return null;
+              },
+            ),
+
+            // CustomDropdown<String>(
+            //   hintText: "Select",
+            //   items: ["Stable", "Moderate", "Wealthy"],
+            //   initialItem: null,
+            //   onChanged:
+            //       (value) => setState(() => userData.financialStatus = value),
+            // ),
             SizedBox(height: 30),
             SizedBox(
               width: double.infinity,
@@ -465,13 +766,25 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
                 onPressed: () {
                   if (_validateForm()) {
                     UserData userData = UserData();
+
+                    // text fields
                     userData.name = nameController.text;
                     userData.contactNo = mobileController.text;
-                    // userData.contactNo = widget.mobile;
                     userData.dob = _formatDate(dobController.text);
                     userData.age = ageController.text;
                     userData.emailId = emailController.text;
                     userData.gender = gender;
+
+                    // dropdown values
+                    userData.profileFor = profileFor;
+                    userData.maritalStatus = martialFor;
+                    userData.skinColor = skinFor;
+                    userData.physicalStatus = physicalFor;
+                    userData.financialStatus = financialFor;
+
+                    // height & weight
+                    userData.height = heightController.text;
+                    userData.weight = weightController.text;
 
                     Navigator.push(
                       context,
@@ -483,6 +796,7 @@ class _BasicDetailsScreenState extends State<BasicDetailsScreen> {
                     );
                   }
                 },
+
                 child: Text(
                   "Continue",
                   style: TextStyle(

@@ -32,7 +32,7 @@ class _ChatScreenState extends State<ChatScreen> {
         final data = jsonDecode(response.body);
         if (data['success'] == true) {
           setState(() {
-            senders = data['senders'];
+            senders = data['contacts'] ?? [];
             isLoading = false;
           });
         }
@@ -101,14 +101,16 @@ class _ChatScreenState extends State<ChatScreen> {
                           lastMessage: sender['message'] ?? "",
                           time: sender['created'] ?? "",
                           profileImg: sender['profile_img'] ?? "",
-                          unreadCount: 0, // API doesn’t provide → set 0
-                          isOnline: false, // API doesn’t provide → set false
+                          unreadCount: 0,
+                          isOnline: false,
                           loggedInUserId: widget.userId.toString(),
                           messageSenderId:
-                              sender['sender_id'].toString(), // from API
+                              sender['contact_user_id']
+                                  .toString(), // use contact_user_id
                           receiverId:
-                              sender['user_id'].toString(), // chat partner id
-                          isSeen: sender['is_seen'] ?? "0",
+                              sender['contact_user_id']
+                                  .toString(), // chat partner id
+                          isSeen: "0", // API doesn't provide → default 0
                         );
                       },
                     ),

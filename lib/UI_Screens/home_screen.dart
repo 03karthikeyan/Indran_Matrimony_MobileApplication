@@ -5,6 +5,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:matrimony/UI_Screens/EditProfileScreen.dart';
 import 'package:matrimony/UI_Screens/Message_Screen.dart';
+import 'package:matrimony/UI_Screens/ProfileInsightsScreen.dart';
 import 'package:matrimony/UI_Screens/ProfileListScreen.dart';
 import 'package:matrimony/UI_Screens/interests_received_screen.dart';
 import 'package:matrimony/UI_Screens/matches_details_screen.dart';
@@ -104,11 +105,10 @@ class _HomeScreenState extends State<HomeScreen> {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       final userId = prefs.getString("user_id") ?? "0"; // default 0 if null
       // 👇 Profile views
-      final profileViews = await ApiService.fetchWhoViewedMyProfile(
+      final profileViews = await ApiService.fetchWhoViewedProfileRecently(
         userId, // dynamic user_id
         10,
         0,
-        userId,
       );
       setState(() {
         profileViewsCount = profileViews.length;
@@ -288,14 +288,18 @@ class _HomeScreenState extends State<HomeScreen> {
                           radius: 26,
                           backgroundImage:
                               isLoading
-                                  ? const AssetImage('assets/user.png')
+                                  ? const AssetImage(
+                                    'assets/Ellipse 222 (1).png',
+                                  )
                                   : (userData != null &&
-                                      userData!['profile_img'] != null &&
-                                      userData!['profile_img']
+                                      userData!['profile_img_path'] != null &&
+                                      userData!['profile_img_path']
                                           .toString()
                                           .isNotEmpty)
-                                  ? NetworkImage(userData!['profile_img'])
-                                  : const AssetImage('assets/user.png')
+                                  ? NetworkImage(userData!['profile_img_path'])
+                                  : const AssetImage(
+                                        'assets/Ellipse 222 (1).png',
+                                      )
                                       as ImageProvider,
                         ),
                       ),
@@ -413,12 +417,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                       (_) => ProfileListScreen(
                                         title: "Who Viewed My Profile",
                                         futureProfiles:
-                                            ApiService.fetchWhoViewedMyProfile(
+                                            ApiService.fetchWhoViewedProfileRecently(
                                               widget.userId
                                                   .toString(), // ✅ use dynamic userId
                                               10,
                                               0,
-                                              widget.userId.toString(),
+                                              // widget.userId.toString(),
                                             ),
                                       ),
                                 ),
@@ -517,11 +521,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                 color: pinkColor.withOpacity(0.1),
                                 shape: BoxShape.circle,
                               ),
-                              padding: const EdgeInsets.all(24),
+                              padding: const EdgeInsets.all(14),
                               child: Icon(
                                 Icons.person_off,
                                 color: pinkColor,
-                                size: 48,
+                                size: 28,
                               ),
                             ),
                             const SizedBox(height: 16),
@@ -543,41 +547,6 @@ class _HomeScreenState extends State<HomeScreen> {
                               style: TextStyle(
                                 fontSize: 14,
                                 color: Colors.black54,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-
-                            // Call-to-action button
-                            ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: pinkColor,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 24,
-                                  vertical: 12,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              onPressed: () {
-                                // Navigate to profile edit or preferences page
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder:
-                                        (_) => EditProfileScreen(
-                                          userId: widget.userId,
-                                          profileData: userData!,
-                                        ),
-                                  ),
-                                );
-                              },
-                              child: const Text(
-                                "Update Profile",
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
                               ),
                             ),
                           ],
@@ -688,7 +657,21 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   GestureDetector(
                     onTap: () {
-                      // Navigate to full list screen
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (_) => ProfileListScreen(
+                                title: "Recently Viewed Profiles",
+                                futureProfiles:
+                                    ApiService.fetchRecentlyViewedProfiles(
+                                      widget.userId.toString(),
+                                      10,
+                                      0,
+                                    ),
+                              ),
+                        ),
+                      );
                     },
                     child: Text(
                       "See all",
@@ -721,7 +704,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     color: pinkColor.withOpacity(0.1),
                                     shape: BoxShape.circle,
                                   ),
-                                  padding: const EdgeInsets.all(24),
+                                  padding: const EdgeInsets.all(8),
                                   child: Icon(
                                     Icons.remove_red_eye_outlined,
                                     color: pinkColor,
@@ -802,15 +785,26 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    "Recent Interests",
+                  Text(
+                    "Recent Interests ($pendingCount)",
                     style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
                   ),
-                  Text(
-                    "See all",
-                    style: TextStyle(
-                      color: pinkColor,
-                      fontWeight: FontWeight.w500,
+                  TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => InterestsReceivedScreen(),
+                        ),
+                      );
+                    },
+                    child: Text(
+                      "See all",
+                      style: TextStyle(
+                        color: pinkColor,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 14, // optional: adjust size if needed
+                      ),
                     ),
                   ),
                 ],
@@ -827,9 +821,44 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Text("Failed to load interests"),
                   );
                 } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return Padding(
-                    padding: const EdgeInsets.all(18),
-                    child: Text("No recent interests found"),
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            decoration: BoxDecoration(
+                              color: pinkColor.withOpacity(0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            padding: const EdgeInsets.all(8),
+                            child: Icon(
+                              Icons.favorite,
+                              color: pinkColor,
+                              size: 40,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          const Text(
+                            "No Recently Interest Yet",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          const Text(
+                            "Start browsing profiles to see your recently Interest members here.",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.black54,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   );
                 } else {
                   final profiles = snapshot.data!;
@@ -1338,190 +1367,215 @@ class _InterestCardState extends State<_InterestCard> {
     // 👇 Hide declined profiles
     if (_status == "declined") return const SizedBox.shrink();
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF7F7F7),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 24,
-            backgroundImage:
-                widget.profileImg.isNotEmpty
-                    ? NetworkImage(
-                      "https://pheonixconstructions.com/assets/profile_image/${widget.profileImg}",
-                    )
-                    : const AssetImage("assets/user.png") as ImageProvider,
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder:
+                (_) => MatchesDetailsScreen(
+                  match: {
+                    "user_id": widget.profileId,
+                    // you can add more fields if needed
+                    "profile_img": widget.profileImg,
+                    "name": widget.name,
+                  },
+                ),
           ),
-          const SizedBox(width: 10),
+        );
+      },
 
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // name + age + time
-                Row(
-                  children: [
-                    Text(
-                      "${widget.name}, ${widget.age}",
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                    const Spacer(),
-                    Text(
-                      widget.time,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.black54,
-                      ),
-                    ),
-                  ],
-                ),
-                Text(
-                  widget.city,
-                  style: const TextStyle(fontSize: 13, color: Colors.black54),
-                ),
-                const SizedBox(height: 6),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF7F7F7),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 24,
+              backgroundImage:
+                  widget.profileImg.isNotEmpty
+                      ? NetworkImage(
+                        "https://pheonixconstructions.com/assets/profile_image/${widget.profileImg}",
+                      )
+                      : const AssetImage("assets/user.png") as ImageProvider,
+            ),
+            const SizedBox(width: 10),
 
-                // tags
-                Row(
-                  children:
-                      widget.tags
-                          .map(
-                            (t) => Container(
-                              margin: const EdgeInsets.only(right: 6),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 3,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(6),
-                                border: Border.all(
-                                  color: pinkColor.withOpacity(0.15),
-                                ),
-                              ),
-                              child: Text(
-                                t,
-                                style: const TextStyle(fontSize: 12),
-                              ),
-                            ),
-                          )
-                          .toList(),
-                ),
-                const SizedBox(height: 6),
-
-                // 🔹 Action buttons
-                if (_loading)
-                  const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(8.0),
-                      child: CircularProgressIndicator(
-                        color: Color(0xFFA51C48),
-                      ),
-                    ),
-                  )
-                else if (_status == "pending") ...[
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // name + age + time
                   Row(
                     children: [
-                      OutlinedButton(
-                        onPressed: _declining ? null : _declineProfile,
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 18,
-                            vertical: 6,
-                          ),
-                          side: BorderSide(color: Colors.grey.shade300),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                        ),
-                        child:
-                            _declining
-                                ? const SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                                : const Text(
-                                  "Decline",
-                                  style: TextStyle(color: Colors.black54),
-                                ),
+                      Text(
+                        "${widget.name}, ${widget.age}",
+                        style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
-
-                      const SizedBox(width: 10),
-                      ElevatedButton(
-                        onPressed: _accepting ? null : _acceptProfile,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: pinkColor,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 22,
-                            vertical: 6,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          elevation: 0,
+                      const Spacer(),
+                      Text(
+                        widget.time,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.black54,
                         ),
-                        child:
-                            _accepting
-                                ? const SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
-                                : const Text(
-                                  "Accept",
-                                  style: TextStyle(color: Colors.white),
-                                ),
                       ),
                     ],
                   ),
-                ] else if (_status == "accepted") ...[
-                  ElevatedButton.icon(
-                    onPressed: () async {
-                      final prefs = await SharedPreferences.getInstance();
-                      final loggedInUserId = prefs.getString('user_id') ?? "";
-
-                      String senderId = loggedInUserId; // ✅ always you
-                      String receiverId =
-                          widget.profileId; // ✅ always the other person
-
-                      print(
-                        "Navigating to MessageScreen with senderId=$senderId, receiverId=$receiverId, name=${widget.name}",
-                      );
-
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder:
-                              (_) => MessageScreen(
-                                senderId: senderId,
-                                receiverId: receiverId,
-                                receiverName: widget.name,
-                              ),
-                        ),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(backgroundColor: pinkColor),
-                    icon: const Icon(Icons.chat, color: Colors.white, size: 16),
-                    label: const Text(
-                      "Chat",
-                      style: TextStyle(color: Colors.white),
-                    ),
+                  Text(
+                    widget.city,
+                    style: const TextStyle(fontSize: 13, color: Colors.black54),
                   ),
+                  const SizedBox(height: 6),
+
+                  // tags
+                  Row(
+                    children:
+                        widget.tags
+                            .map(
+                              (t) => Container(
+                                margin: const EdgeInsets.only(right: 6),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 3,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(
+                                    color: pinkColor.withOpacity(0.15),
+                                  ),
+                                ),
+                                child: Text(
+                                  t,
+                                  style: const TextStyle(fontSize: 12),
+                                ),
+                              ),
+                            )
+                            .toList(),
+                  ),
+                  const SizedBox(height: 6),
+
+                  // 🔹 Action buttons
+                  if (_loading)
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(8.0),
+                        child: CircularProgressIndicator(
+                          color: Color(0xFFA51C48),
+                        ),
+                      ),
+                    )
+                  else if (_status == "pending") ...[
+                    Row(
+                      children: [
+                        OutlinedButton(
+                          onPressed: _declining ? null : _declineProfile,
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 18,
+                              vertical: 6,
+                            ),
+                            side: BorderSide(color: Colors.grey.shade300),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                          ),
+                          child:
+                              _declining
+                                  ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                  : const Text(
+                                    "Decline",
+                                    style: TextStyle(color: Colors.black54),
+                                  ),
+                        ),
+
+                        const SizedBox(width: 10),
+                        ElevatedButton(
+                          onPressed: _accepting ? null : _acceptProfile,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: pinkColor,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 22,
+                              vertical: 6,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            elevation: 0,
+                          ),
+                          child:
+                              _accepting
+                                  ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                  : const Text(
+                                    "Accept",
+                                    style: TextStyle(color: Colors.white),
+                                  ),
+                        ),
+                      ],
+                    ),
+                  ] else if (_status == "accepted") ...[
+                    ElevatedButton.icon(
+                      onPressed: () async {
+                        final prefs = await SharedPreferences.getInstance();
+                        final loggedInUserId = prefs.getString('user_id') ?? "";
+
+                        String senderId = loggedInUserId; // ✅ always you
+                        String receiverId =
+                            widget.profileId; // ✅ always the other person
+
+                        print(
+                          "Navigating to MessageScreen with senderId=$senderId, receiverId=$receiverId, name=${widget.name}",
+                        );
+
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder:
+                                (_) => MessageScreen(
+                                  senderId: senderId,
+                                  receiverId: receiverId,
+                                  receiverName: widget.name,
+                                ),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: pinkColor,
+                      ),
+                      icon: const Icon(
+                        Icons.chat,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                      label: const Text(
+                        "Chat",
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

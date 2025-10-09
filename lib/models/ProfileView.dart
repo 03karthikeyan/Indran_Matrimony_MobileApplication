@@ -1,6 +1,7 @@
 class ProfileView {
   final String id;
   final String name;
+  final String? username;
   final String? gender;
   final String? city;
   final String? state;
@@ -14,6 +15,7 @@ class ProfileView {
   ProfileView({
     required this.id,
     required this.name,
+    this.username,
     this.gender,
     this.city,
     this.state,
@@ -29,6 +31,7 @@ class ProfileView {
     return ProfileView(
       id: json['profile_id']?.toString() ?? '',
       name: json['name'] ?? '',
+      username: json['username'],
       gender: json['gender'],
       city: json['city'],
       state: json['state'],
