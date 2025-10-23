@@ -644,8 +644,8 @@ class _ProfessionalDetailsScreenState extends State<ProfessionalDetailsScreen> {
         annualIncomeController.text.isEmpty ||
         workLocation == null ||
         selectedState == null ||
-        selectedDistrict == null || // ✅ Correct
-        cityController.text.isEmpty || // ✅ Correct
+        selectedDistrict == null || // Correct
+        cityController.text.isEmpty || //  Correct
         address1Controller.text.isEmpty ||
         address2Controller.text.isEmpty ||
         pincodeController.text.isEmpty) {
