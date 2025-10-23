@@ -644,13 +644,13 @@ class _ProfessionalDetailsScreenState extends State<ProfessionalDetailsScreen> {
         annualIncomeController.text.isEmpty ||
         workLocation == null ||
         selectedState == null ||
-        city == null ||
-        districtController.text.isEmpty ||
+        selectedDistrict == null || // ✅ Correct
+        cityController.text.isEmpty || // ✅ Correct
         address1Controller.text.isEmpty ||
         address2Controller.text.isEmpty ||
         pincodeController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Please fill all required fields')),
+        const SnackBar(content: Text('⚠️ Please fill all required fields')),
       );
       return false;
     }
