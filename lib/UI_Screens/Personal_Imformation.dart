@@ -320,6 +320,45 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                 padding: const EdgeInsets.all(20),
                 child: Column(
                   children: [
+                    // 🔹 Profile Status Header
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 8,
+                        horizontal: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _getStatusColor(
+                          user.profileStatus,
+                        ).withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: _getStatusColor(user.profileStatus),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            _getStatusIcon(user.profileStatus),
+                            color: _getStatusColor(user.profileStatus),
+                            size: 18,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            _getStatusText(user.profileStatus),
+                            style: TextStyle(
+                              color: _getStatusColor(user.profileStatus),
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // 🔹 Profile Image
                     Stack(
                       children: [
                         CircleAvatar(
@@ -359,6 +398,7 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                         ),
                       ],
                     ),
+
                     if (user.badge != null && user.badge!.isNotEmpty)
                       Container(
                         margin: const EdgeInsets.only(top: 10),
@@ -378,9 +418,9 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             const Icon(
-                              Icons.verified, // choose any icon you like
+                              Icons.verified,
                               size: 16,
-                              color: Colors.green, // match the badge theme
+                              color: Colors.green,
                             ),
                             const SizedBox(width: 6),
                             Text(
@@ -395,8 +435,10 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                       ),
 
                     const SizedBox(height: 10),
+
+                    // 🔹 User Code
                     Text(
-                      "${labels[_selectedLanguage]!['user_code'] ?? 'User Code'}: ${user.userCode ?? '-'}",
+                      "User Code: ${user.userCode ?? '-'}",
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -406,7 +448,7 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
 
                     const SizedBox(height: 16),
 
-                    // ✅ Action Buttons
+                    // 🔹 Buttons
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -431,12 +473,9 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                                         EditPersonalDetailsScreen(user: user),
                               ),
                             );
-                            if (updated == true) {
-                              _loadProfile(); // refresh immediately after edit
-                            }
+                            if (updated == true) _loadProfile();
                           },
                         ),
-
                         const SizedBox(width: 12),
                         ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(
@@ -452,17 +491,15 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                             color: Colors.white,
                           ),
                           label: Text(
-                            isActive
-                                ? (labels[_selectedLanguage]!['deactivate'] ??
-                                    "Deactivate")
-                                : (labels[_selectedLanguage]!['activate'] ??
-                                    "Activate"),
+                            isActive ? "Deactivate" : "Activate",
                             style: const TextStyle(color: Colors.white),
                           ),
                         ),
                       ],
                     ),
-                    SizedBox(height: 4),
+
+                    const SizedBox(height: 8),
+
                     ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.pinkAccent,
@@ -475,7 +512,7 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                         color: Colors.white,
                       ),
                       label: const Text(
-                        "Add_FamilyDetails",
+                        "Add Family Details",
                         style: TextStyle(color: Colors.white),
                       ),
                       onPressed: () async {
@@ -484,14 +521,11 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                           MaterialPageRoute(
                             builder:
                                 (_) => FamilyDetailsUpdateScreen(
-                                  userId:
-                                      user.userId.toString(), // ✅ FIXED TYPE
+                                  userId: user.userId.toString(),
                                 ),
                           ),
                         );
-                        if (updated == true) {
-                          _loadProfile(); // ✅ refresh profile data after update
-                        }
+                        if (updated == true) _loadProfile();
                       },
                     ),
                   ],
@@ -928,3 +962,42 @@ Map<String, String> appBarTitles = {
   'en': "Personal Information",
   'ta': "தனிப்பட்ட தகவல்கள்", // Tamil translation
 };
+
+Color _getStatusColor(String? status) {
+  switch (status?.toLowerCase()) {
+    case 'approved':
+      return Colors.green;
+    case 'pending':
+      return Colors.orange;
+    case 'rejected':
+      return Colors.red;
+    default:
+      return Colors.grey;
+  }
+}
+
+IconData _getStatusIcon(String? status) {
+  switch (status?.toLowerCase()) {
+    case 'approved':
+      return Icons.check_circle;
+    case 'pending':
+      return Icons.hourglass_bottom;
+    case 'rejected':
+      return Icons.cancel;
+    default:
+      return Icons.info;
+  }
+}
+
+String _getStatusText(String? status) {
+  switch (status?.toLowerCase()) {
+    case 'approved':
+      return "Profile Approved";
+    case 'pending':
+      return "Profile Pending";
+    case 'rejected':
+      return "Profile Rejected";
+    default:
+      return "Status Unknown";
+  }
+}

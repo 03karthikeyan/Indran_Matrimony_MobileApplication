@@ -26,6 +26,7 @@ class UserData {
   bool? isActive;
 
   // ✅ New fields
+  String? profileStatus;
   String? maritalStatus;
   String? skinColor;
   String? height;
@@ -96,6 +97,7 @@ class UserData {
       'siblings': siblings ?? '',
       'native_place': nativePlace ?? '',
       'mother_tongue': motherTongue ?? '',
+      'profile_status': profileStatus ?? '',
     };
   }
 
@@ -148,7 +150,8 @@ class UserData {
       ..communityCertificatePath =
           json['community_certificate_path']?.toString()
       ..jathakamPath = json['jathakam_path']?.toString()
-      ..badge = json['badge']?.toString();
+      ..badge = json['badge']?.toString()
+      ..profileStatus = json['profile_status']?.toString();
   }
 }
 

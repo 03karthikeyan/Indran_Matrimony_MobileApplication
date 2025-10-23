@@ -32,7 +32,7 @@ class _ProfessionalDetailsScreenState extends State<ProfessionalDetailsScreen> {
   String? city;
   final UserData userData = UserData();
   final List<String> workLocations = ['Office', 'Remote', 'Hybrid'];
-  final List<String> cities = ['Chennai', 'Coimbatore', 'Madurai'];
+  // final List<String> cities = ['Chennai', 'Coimbatore', 'Madurai'];
 
   List<AnnualIncome> _incomeList = [];
   bool _isLoadingIncome = true;
@@ -82,26 +82,31 @@ class _ProfessionalDetailsScreenState extends State<ProfessionalDetailsScreen> {
   /// Fetch district list from API
   Future<void> fetchDistrictList() async {
     try {
-      final response = await http.get(
-        Uri.parse(
-          'https://pheonixconstructions.com/Matrimony%20API/district_list.php',
-        ),
+      final url = Uri.parse(
+        'https://pheonixconstructions.com/Matrimony%20API/district_list.php',
       );
+
+      final response = await http.get(url);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        if (data['success'] == true) {
+
+        if (data['success'] == true && data['data'] != null) {
           setState(() {
             districtOptions = List<String>.from(
-              data['data'].map((item) => item['district_name'].toString()),
+              data['data']
+                  .map((item) => item['district_name'].toString())
+                  .toList(),
             );
           });
+        } else {
+          debugPrint("❌ No data found or success=false");
         }
       } else {
-        debugPrint('Error: ${response.statusCode}');
+        debugPrint('❌ HTTP Error: ${response.statusCode}');
       }
     } catch (e) {
-      debugPrint('Failed to load districts: $e');
+      debugPrint('❌ Exception: $e');
     } finally {
       setState(() => isLoading = false);
     }
@@ -418,31 +423,6 @@ class _ProfessionalDetailsScreenState extends State<ProfessionalDetailsScreen> {
 
                     // City
                     Text(
-                      "City:",
-                      style: TextStyle(fontSize: 14, color: Colors.black87),
-                    ),
-                    SizedBox(height: 4),
-                    CustomDropdown<String>.search(
-                      hintText: "Select City",
-                      items: cities,
-                      initialItem: city,
-                      onChanged: (value) {
-                        setState(() => city = value);
-                      },
-                      decoration: CustomDropdownDecoration(
-                        closedBorder: Border.all(color: Colors.grey.shade400),
-                        closedBorderRadius: BorderRadius.circular(9),
-                        expandedBorder: Border.all(
-                          color: Colors.blueAccent,
-                        ), // when opened
-                        expandedBorderRadius: BorderRadius.circular(9),
-                        hintStyle: TextStyle(
-                          color: Colors.grey.shade600,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ),
-                    Text(
                       "City",
                       style: TextStyle(
                         fontSize: 14,
@@ -481,27 +461,28 @@ class _ProfessionalDetailsScreenState extends State<ProfessionalDetailsScreen> {
                 ),
                 const SizedBox(height: 4),
 
-                // Loading indicator while fetching data
-                CustomDropdown<String>.search(
-                  hintText: "Select District",
-                  items: districtOptions,
-                  initialItem: selectedDistrict,
-                  onChanged: (value) {
-                    setState(() => selectedDistrict = value);
-                  },
-                  decoration: CustomDropdownDecoration(
-                    closedBorder: Border.all(color: Colors.grey.shade400),
-                    closedBorderRadius: BorderRadius.circular(9),
-                    expandedBorder: Border.all(
-                      color: Colors.blueAccent,
-                    ), // when opened
-                    expandedBorderRadius: BorderRadius.circular(9),
-                    hintStyle: TextStyle(
-                      color: Colors.grey.shade600,
-                      fontSize: 14,
+                if (isLoading)
+                  const Center(child: CircularProgressIndicator())
+                else
+                  CustomDropdown<String>.search(
+                    hintText: "Select District",
+                    items: districtOptions,
+                    initialItem: selectedDistrict,
+                    onChanged: (value) {
+                      setState(() => selectedDistrict = value);
+                      debugPrint("✅ Selected: $value");
+                    },
+                    decoration: CustomDropdownDecoration(
+                      closedBorder: Border.all(color: Colors.grey.shade400),
+                      closedBorderRadius: BorderRadius.circular(9),
+                      expandedBorder: Border.all(color: Colors.blueAccent),
+                      expandedBorderRadius: BorderRadius.circular(9),
+                      hintStyle: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 14,
+                      ),
                     ),
                   ),
-                ),
                 SizedBox(height: 16),
 
                 // Street / House / Flat
