@@ -356,7 +356,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                         // Language Selector
                         GestureDetector(
-                          onTap: _showLanguageSelector,
+                          // onTap: _showLanguageSelector,
                           child: Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 12,

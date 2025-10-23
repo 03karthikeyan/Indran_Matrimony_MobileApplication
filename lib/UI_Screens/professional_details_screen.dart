@@ -22,6 +22,7 @@ class _ProfessionalDetailsScreenState extends State<ProfessionalDetailsScreen> {
   final TextEditingController occupationController = TextEditingController();
   final TextEditingController annualIncomeController = TextEditingController();
   final TextEditingController districtController = TextEditingController();
+  final TextEditingController cityController = TextEditingController();
   final TextEditingController address1Controller = TextEditingController();
   final TextEditingController address2Controller = TextEditingController();
   final TextEditingController pincodeController = TextEditingController();
@@ -38,6 +39,9 @@ class _ProfessionalDetailsScreenState extends State<ProfessionalDetailsScreen> {
 
   List<String> stateOptions = [];
   String? selectedState;
+
+  List<String> districtOptions = [];
+  String? selectedDistrict;
   bool isLoading = true;
 
   @override
@@ -45,6 +49,7 @@ class _ProfessionalDetailsScreenState extends State<ProfessionalDetailsScreen> {
     super.initState();
     fetchStates();
     fetchAnnualIncomeList();
+    fetchDistrictList();
   }
 
   //Income List Fetch
@@ -71,6 +76,34 @@ class _ProfessionalDetailsScreenState extends State<ProfessionalDetailsScreen> {
     } catch (e) {
       print("Error fetching annual income list: $e");
       setState(() => _isLoadingIncome = false);
+    }
+  }
+
+  /// Fetch district list from API
+  Future<void> fetchDistrictList() async {
+    try {
+      final response = await http.get(
+        Uri.parse(
+          'https://pheonixconstructions.com/Matrimony%20API/district_list.php',
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success'] == true) {
+          setState(() {
+            districtOptions = List<String>.from(
+              data['data'].map((item) => item['district_name'].toString()),
+            );
+          });
+        }
+      } else {
+        debugPrint('Error: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('Failed to load districts: $e');
+    } finally {
+      setState(() => isLoading = false);
     }
   }
 
@@ -409,6 +442,35 @@ class _ProfessionalDetailsScreenState extends State<ProfessionalDetailsScreen> {
                         ),
                       ),
                     ),
+                    Text(
+                      "City",
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    TextField(
+                      controller: cityController,
+                      decoration: InputDecoration(
+                        hintText: "Enter City",
+                        filled: true,
+                        fillColor: Colors.white,
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 14,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(9),
+                          borderSide: BorderSide(color: Colors.grey.shade400),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(9),
+                          borderSide: BorderSide(color: Colors.grey.shade400),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
 
@@ -417,23 +479,26 @@ class _ProfessionalDetailsScreenState extends State<ProfessionalDetailsScreen> {
                   "District:",
                   style: TextStyle(fontSize: 14, color: Colors.black87),
                 ),
-                SizedBox(height: 4),
-                TextField(
-                  controller: districtController,
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: Colors.white,
-                    contentPadding: EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 14,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(9),
-                      borderSide: BorderSide(color: Colors.grey.shade400),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(9),
-                      borderSide: BorderSide(color: Colors.grey.shade400),
+                const SizedBox(height: 4),
+
+                // Loading indicator while fetching data
+                CustomDropdown<String>.search(
+                  hintText: "Select District",
+                  items: districtOptions,
+                  initialItem: selectedDistrict,
+                  onChanged: (value) {
+                    setState(() => selectedDistrict = value);
+                  },
+                  decoration: CustomDropdownDecoration(
+                    closedBorder: Border.all(color: Colors.grey.shade400),
+                    closedBorderRadius: BorderRadius.circular(9),
+                    expandedBorder: Border.all(
+                      color: Colors.blueAccent,
+                    ), // when opened
+                    expandedBorderRadius: BorderRadius.circular(9),
+                    hintStyle: TextStyle(
+                      color: Colors.grey.shade600,
+                      fontSize: 14,
                     ),
                   ),
                 ),
@@ -554,8 +619,8 @@ class _ProfessionalDetailsScreenState extends State<ProfessionalDetailsScreen> {
                             annualIncomeController.text;
                         widget.userData.workLocation = workLocation;
                         widget.userData.state = selectedState;
-                        widget.userData.city = city;
-                        widget.userData.district = districtController.text;
+                        widget.userData.city = cityController.text;
+                        widget.userData.district = selectedDistrict;
                         widget.userData.addressLane1 = address1Controller.text;
                         widget.userData.addressLane2 = address2Controller.text;
                         widget.userData.pincode = pincodeController.text;

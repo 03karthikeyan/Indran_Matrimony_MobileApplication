@@ -276,7 +276,7 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
           Padding(
             padding: const EdgeInsets.only(right: 12.0),
             child: GestureDetector(
-              onTap: _showLanguageSelector,
+              // onTap: _showLanguageSelector,
               child: Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 12,
